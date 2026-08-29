@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrackShift — AI Motorsport Intelligence</title>
+  <meta name="description" content="AI Motorsport Intelligence: isolate true tyre degradation from practice data and simulate race strategy in real time." />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- ─── Header ─── -->
+    <header id="app-header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">◈</span>
+          <span class="logo-text">TRACK<span class="logo-highlight">SHIFT</span></span>
+        </div>
+        <span class="header-badge" id="race-badge">2024 SINGAPORE GP</span>
+      </div>
+      <nav class="tab-nav" id="tab-nav">
+        <button class="nav-tab active" data-target="panel-story" id="tab-story">RESEARCH STORY</button>
+        <button class="nav-tab" data-target="panel-track-select" id="tab-track-select">TRACK SETUP</button>
+        <button class="nav-tab" data-target="panel-car-setup" id="tab-car-setup">CAR SETUP</button>
+        <button class="nav-tab" data-target="panel-simulation" id="tab-simulation">RACE CONTROL</button>
+        <button class="nav-tab" data-target="panel-intelligence" id="tab-intelligence">TYRE INTELLIGENCE</button>
+        <button class="nav-tab" data-target="panel-validation" id="tab-validation">MODEL VALIDATION</button>
+        <button class="nav-tab" data-target="panel-report" id="tab-report">REPORT</button>
+      </nav>
+      <div class="header-right">
+        <span class="last-run" id="last-run-time" style="font-size: 10px; color: var(--text-dim); margin-right: 15px; font-family: 'JetBrains Mono', monospace;"></span>
+        <span class="data-status" id="data-status">
+          <span class="status-dot"></span>
+          <span class="status-text">LOADING...</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: TRACK SELECTION
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-track-select" class="page hidden">
+      <div class="track-select-container">
+        <div class="track-select-header">
+          <h2>SELECT CIRCUIT</h2>
+          <p>Choose the circuit and weather conditions for your simulation.</p>
+        </div>
+
+        <!-- Circuit Cards -->
+        <div class="circuit-grid" id="circuit-grid">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Configuration Panel -->
+        <div class="circuit-config-panel">
+          <div class="config-col">
+            <h3>SELECTED CIRCUIT</h3>
+            <div id="ts-selected-name" style="font-size: 1.2rem; font-weight: 700; color: var(--cyan);">---</div>
+            <div id="ts-selected-desc" style="color: var(--text-secondary); margin-bottom: 12px;">Select a circuit above</div>
+          </div>
+          <div class="config-col">
+            <h3>CONDITIONS</h3>
+            <div class="condition-selector" id="condition-selector">
+              <button class="cond-btn active" data-cond="DRY">DRY</button>
+              <button class="cond-btn" data-cond="DAMP">DAMP</button>
+              <button class="cond-btn" data-cond="WET">WET</button>
+            </div>
+          </div>
+          <div class="config-col">
+            <h3>MODEL STATUS</h3>
+            <div id="ts-model-status" style="color: var(--text-secondary);">---</div>
+          </div>
+          <div class="config-col" style="display:flex; align-items:center; justify-content:flex-end;">
+            <button id="btn-confirm-track" class="btn-primary" disabled>PROCEED TO SETUP ➔</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: CAR DESIGN & RACE SETUP
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-car-setup" class="page hidden" style="flex-direction:column; padding: 20px; overflow-y: auto; overflow-x: hidden;">
+      
+      <!-- Top banner for Title and Ruleset -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; z-index: 10;">
+        <div class="track-select-header">
+          <h2>CAR DESIGN & RACE SETUP</h2>
+          <p id="setup-subtitle">Prepare the car, tyres and race strategy for ---</p>
+        </div>
+        
+        <div class="glass-panel" style="padding: 15px; display: flex; align-items: center; gap: 15px; border: 1px solid rgba(0,229,255,0.3);">
+          <div>
+            <div style="font-size: 0.8rem; color: var(--cyan); margin-bottom: 5px;">RULESET</div>
+            <select id="setup-ruleset" class="sim-select" style="font-size: 1rem; padding: 5px 10px;">
+              <option value="F1_2026_OFFICIAL">OFFICIAL 2026 F1</option>
+              <option value="F1_CLASSIC_REFUELLING">CLASSIC F1</option>
+            </select>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); max-width: 200px;" id="ruleset-desc">
+            No Race Refuelling
+          </div>
+        </div>
+      </div>
+
+      <!-- Main HUD Area -->
+      <div class="setup-hud-container" style="position: relative; flex: 1; min-height: 750px; display: flex; align-items: center; justify-content: center; overflow: visible;">
+        
+        <!-- Center F1 Car SVG Schematic -->
+        <div class="f1-schematic-wrapper" style="position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 625px;">
+          <svg viewBox="0 0 200 500" width="100%" height="100%" style="filter: drop-shadow(0 0 6px var(--cyan));">
+            <!-- Front Wing -->
+            <path d="M 50 40 L 150 40 L 150 65 L 50 65 Z" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            <line x1="80" y1="65" x2="120" y2="65" stroke="var(--cyan)" stroke-width="2"/>
+            <line x1="100" y1="40" x2="100" y2="20" stroke="var(--cyan)" stroke-width="2"/>
+            
+            <!-- Tyres (Front) -->
+            <rect x="35" y="80" width="20" height="50" rx="4" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            <rect x="145" y="80" width="20" height="50" rx="4" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            
+            <!-- Suspension (Front) -->
+            <line x1="55" y1="105" x2="90" y2="120" stroke="var(--cyan)" stroke-width="1.5"/>
+            <line x1="145" y1="105" x2="110" y2="120" stroke="var(--cyan)" stroke-width="1.5"/>
+            
+            <!-- Body/Chassis -->
+            <path d="M 90 65 L 110 65 L 120 180 L 130 250 L 125 380 L 140 430 L 115 470 L 85 470 L 60 430 L 75 380 L 70 250 L 80 180 Z" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            
+            <!-- Cockpit/Halo -->
+            <path d="M 85 200 C 100 180, 115 200, 115 200 L 110 260 L 90 260 Z" stroke="var(--cyan)" fill="none" stroke-width="1.5"/>
+            <path d="M 100 185 L 100 210 M 85 210 C 100 230, 115 210, 115 210" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            
+            <!-- Sidepods -->
+            <path d="M 70 250 L 50 260 L 55 350 L 75 380" stroke="var(--cyan)" fill="none" stroke-width="1.5"/>
+            <path d="M 130 250 L 150 260 L 145 350 L 125 380" stroke="var(--cyan)" fill="none" stroke-width="1.5"/>
+            
+            <!-- Tyres (Rear) -->
+            <rect x="30" y="380" width="25" height="55" rx="4" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            <rect x="145" y="380" width="25" height="55" rx="4" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            
+            <!-- Suspension (Rear) -->
+            <line x1="55" y1="407" x2="80" y2="400" stroke="var(--cyan)" stroke-width="1.5"/>
+            <line x1="145" y1="407" x2="120" y2="400" stroke="var(--cyan)" stroke-width="1.5"/>
+            
+            <!-- Rear Wing -->
+            <path d="M 50 470 L 150 470 L 150 490 L 50 490 Z" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            <line x1="85" y1="470" x2="85" y2="450" stroke="var(--cyan)" stroke-width="2"/>
+            <line x1="115" y1="470" x2="115" y2="450" stroke="var(--cyan)" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <!-- LEFT SIDE PANELS -->
+        <div style="position: absolute; top: 10%; left: 5%; display: flex; flex-direction: column; gap: 40px; z-index: 2; width: 300px;">
+          
+          <!-- Aerodynamics (Front Wing) -->
+          <div class="hud-panel glass-panel" style="position: relative;">
+            <div class="hud-connector line-right" style="top: 30px; width: calc(50vw - 420px);"></div>
+            <h3 style="color:var(--cyan); border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 5px; margin-bottom: 15px; font-size: 0.9rem;">AERODYNAMICS</h3>
+            <div style="display:flex; flex-direction: column; gap: 10px;">
+              <div>
+                <label style="font-size: 0.7rem;">DOWNFORCE LEVEL</label>
+                <select id="setup-aero-downforce" class="sim-select" style="font-size: 0.85rem; padding: 5px;">
+                  <option value="LOW">LOW</option>
+                  <option value="MEDIUM" selected>MEDIUM (Recommended)</option>
+                  <option value="HIGH">HIGH</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.7rem;">AERO BALANCE</label>
+                <select id="setup-aero-balance" class="sim-select" style="font-size: 0.85rem; padding: 5px;">
+                  <option value="FRONT">FRONT-BIASED</option>
+                  <option value="BALANCED" selected>BALANCED (Recommended)</option>
+                  <option value="REAR">REAR-BIASED</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mechanical (Suspension) -->
+          <div class="hud-panel glass-panel" style="position: relative;">
+            <div class="hud-connector line-right" style="top: 30px; width: calc(50vw - 380px);"></div>
+            <h3 style="color:var(--cyan); border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 5px; margin-bottom: 15px; font-size: 0.9rem;">MECHANICAL & BRAKES</h3>
+            <div style="display:flex; flex-direction: column; gap: 10px;">
+              <div>
+                <label style="font-size: 0.7rem;">MECHANICAL BALANCE</label>
+                <select id="setup-mech-balance" class="sim-select" style="font-size: 0.85rem; padding: 5px;">
+                  <option value="FRONT">FRONT-BIASED</option>
+                  <option value="BALANCED" selected>BALANCED (Recommended)</option>
+                  <option value="REAR">REAR-BIASED</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.7rem;">BRAKE BIAS</label>
+                <select id="setup-brake-bias" class="sim-select" style="font-size: 0.85rem; padding: 5px;">
+                  <option value="FRONT">FRONT</option>
+                  <option value="BALANCED" selected>BALANCED (Recommended)</option>
+                  <option value="REAR">REAR</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tyres -->
+          <div class="hud-panel glass-panel" style="position: relative;">
+            <div class="hud-connector line-right" style="top: 30px; width: calc(50vw - 320px); transform: translateY(40px) rotate(-10deg); transform-origin: left center;"></div>
+            <h3 style="color:var(--cyan); border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 5px; margin-bottom: 15px; font-size: 0.9rem;">TYRES</h3>
+            <div style="display:flex; flex-direction: column; gap: 10px;">
+              <label style="font-size: 0.7rem;">STARTING TYRE</label>
+              <select id="setup-tyre" class="sim-select" style="font-size: 0.85rem; padding: 5px;">
+                <option value="SOFT">SOFT</option>
+                <option value="MEDIUM" selected>MEDIUM (Recommended)</option>
+                <option value="HARD">HARD</option>
+                <option value="INTERMEDIATE">INTERMEDIATE</option>
+                <option value="WET">FULL WET</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT SIDE PANELS -->
+        <div style="position: absolute; top: 15%; right: 5%; display: flex; flex-direction: column; gap: 80px; z-index: 2; width: 300px;">
+          
+          <!-- Fuel (Center Tank) -->
+          <div class="hud-panel glass-panel" style="position: relative;">
+            <div class="hud-connector line-left" style="top: 30px; width: calc(50vw - 380px);"></div>
+            <h3 style="color:var(--cyan); border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 5px; margin-bottom: 15px; font-size: 0.9rem;">FUEL TANK</h3>
+            <label style="font-size: 0.7rem;">STARTING FUEL (<span id="setup-fuel-val">110.0</span> kg)</label>
+            <input type="range" id="setup-fuel" min="70" max="110" step="0.1" value="110" style="width: 100%;">
+            <div style="display:flex; flex-direction: column; font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; gap: 3px;">
+              <span id="setup-fuel-min-label">Minimum to finish: -- kg</span>
+              <span id="setup-fuel-rec-label">Recommended: -- kg</span>
+              <span>Max: 110.0 kg</span>
+            </div>
+          </div>
+
+          <!-- Energy (Engine) -->
+          <div class="hud-panel glass-panel" style="position: relative;">
+            <div class="hud-connector line-left" style="top: 30px; width: calc(50vw - 360px); transform: translateY(-30px) rotate(15deg); transform-origin: right center;"></div>
+            <h3 style="color:var(--cyan); border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 5px; margin-bottom: 15px; font-size: 0.9rem;">ENERGY STRATEGY</h3>
+            <label style="font-size: 0.7rem;">DEPLOYMENT</label>
+            <select id="setup-energy" class="sim-select" style="width: 100%; font-size: 0.85rem; padding: 5px;">
+              <option value="CONSERVATIVE">CONSERVATIVE (High Reserve)</option>
+              <option value="BALANCED" selected>BALANCED (Recommended)</option>
+              <option value="AGGRESSIVE">AGGRESSIVE (Max Deployment)</option>
+            </select>
+          </div>
+          
+        </div>
+
+      </div> <!-- End of setup-hud-container -->
+
+      <!-- BOTTOM PANELS: Legality & Preview -->
+      <div style="display: flex; gap: 20px; padding-top: 20px; margin-top: auto;">
+        <!-- Preview -->
+        <div class="glass-panel" style="padding: 15px; flex: 2;">
+          <h3 style="color:var(--text-primary); margin-bottom: 10px; font-size: 0.8rem;">LIVE PERFORMANCE PREVIEW</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <div class="metric-row" style="margin-bottom: 8px;">
+                <div style="display:flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 3px;">
+                  <span>TOP SPEED</span><span id="preview-speed">--</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; overflow: hidden;">
+                  <div id="preview-speed-bar" style="background: var(--cyan); width: 50%; height: 100%;"></div>
+                </div>
+              </div>
+              <div class="metric-row" style="margin-bottom: 8px;">
+                <div style="display:flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 3px;">
+                  <span>CORNERING GRIP</span><span id="preview-grip">--</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; overflow: hidden;">
+                  <div id="preview-grip-bar" style="background: var(--cyan); width: 50%; height: 100%;"></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="metric-row" style="margin-bottom: 8px;">
+                <div style="display:flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 3px;">
+                  <span>TYRE DEGRADATION</span><span id="preview-wear">--</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; overflow: hidden;">
+                  <div id="preview-wear-bar" style="background: var(--red); width: 50%; height: 100%;"></div>
+                </div>
+              </div>
+              <div class="metric-row" style="margin-bottom: 8px;">
+                <div style="display:flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 3px;">
+                  <span>FUEL EFFICIENCY</span><span id="preview-fuel">--</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; overflow: hidden;">
+                  <div id="preview-fuel-bar" style="background: var(--amber); width: 50%; height: 100%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px;" id="preview-tradeoff">
+            Tradeoff summary...
+          </p>
+        </div>
+
+        <!-- Legality -->
+        <div class="glass-panel" style="padding: 15px; border-top: 3px solid var(--green); flex: 1; display: flex; flex-direction: column;" id="setup-legality-panel">
+          <h3 style="color:var(--green); margin-bottom: 10px; font-size: 0.8rem;" id="setup-legality-title">✓ FIA LEGALITY CHECK</h3>
+          <ul style="list-style: none; padding: 0; font-size: 0.75rem; line-height: 1.5; flex: 1; overflow-y: auto; margin-bottom: 10px;" id="setup-legality-list">
+            <!-- JS Populated -->
+          </ul>
+          <button id="btn-confirm-setup" class="btn-primary" style="font-size: 1rem; padding: 10px; margin-top: auto;">START RACE ➔</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: RACE CONTROL (Simulation)
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-simulation" class="page hidden">
+      
+      <!-- START SCREEN -->
+      <div id="start-screen" class="sim-overlay-screen active">
+        <div class="start-card">
+          <h2>RACE CONFIGURATION</h2>
+          <div class="config-grid">
+            <div class="config-item">
+              <span>CIRCUIT</span>
+              <strong id="pre-race-circuit">---</strong>
+            </div>
+            <div class="config-item">
+              <span>CONDITIONS</span>
+              <strong id="pre-race-condition">---</strong>
+            </div>
+            <div class="config-item">
+              <span>RACE DISTANCE</span>
+              <strong id="pre-race-laps">---</strong>
+            </div>
+            <div class="config-item">
+              <span>STARTING TYRE</span>
+              <strong>Medium</strong>
+            </div>
+            <div class="config-item">
+              <span>STARTING POS</span>
+              <strong>P8</strong>
+            </div>
+            <div class="config-item">
+              <span>DEMO SCENARIO</span>
+              <select id="scenario-select" class="track-select">
+                <option value="NORMAL">Normal Race</option>
+                <option value="UNDERCUT">Undercut Opportunity</option>
+                <option value="SAFETY_CAR">Safety Car Chaos</option>
+                <option value="HIGH_DEG">High Degradation</option>
+                <option value="FUEL_SAVE">Marginal Fuel</option>
+              </select>
+            </div>
+          </div>
+          <button id="btn-start-race" class="btn-primary">▶ START RACE</button>
+        </div>
+      </div>
+
+      <!-- RACE FINISH SCREEN -->
+      <div id="finish-screen" class="sim-overlay-screen">
+        <div class="finish-card">
+          <h2>🏁 RACE FINISHED</h2>
+          <h1 id="finish-pos">P4</h1>
+          <div class="finish-stats">
+            <div class="stat"><span>STARTING POS</span><strong id="finish-start-pos">P8</strong></div>
+            <div class="stat"><span>POSITIONS GAINED</span><strong id="finish-gained" class="positive">+4</strong></div>
+            <div class="stat"><span>PIT STOPS</span><strong id="finish-stops">2</strong></div>
+            <div class="stat"><span>STRATEGY TIME SAVED</span><strong id="finish-time-saved">+6.8s</strong></div>
+          </div>
+          <div id="finish-what-if"></div>
+          <div class="finish-actions" style="margin-top:20px;">
+            <button id="btn-restart-race" class="btn-secondary">↺ RESTART RACE</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN RACE CONTROL UI -->
+      <div id="race-control-layout" class="rc-layout hidden">
+        
+        <!-- HEADER ROW: Global Status & Controls -->
+        <div class="rc-header">
+          <div class="rc-status-banner" id="rc-status-banner">GREEN FLAG</div>
+          <div class="rc-timeline" id="rc-timeline"></div>
+          <div class="rc-controls">
+            <button class="rc-ctrl-btn" id="ctrl-play-pause">⏸</button>
+            <button class="rc-ctrl-btn" id="ctrl-restart">↺</button>
+            <div class="speed-selector">
+              <button class="spd-btn" data-speed="1">1x</button>
+              <button class="spd-btn active" data-speed="2">2x</button>
+              <button class="spd-btn" data-speed="4">4x</button>
+              <button class="spd-btn" data-speed="8">8x</button>
+              <button class="spd-btn" data-speed="16">16x</button>
+              <button class="spd-btn" data-speed="20">20x</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MIDDLE ROW: Telemetry, Track, Event Feed -->
+        <div class="rc-middle">
+          <div class="rc-panel rc-telemetry">
+            <h3>OUR CAR #11</h3>
+            <div class="telem-grid">
+              <div class="telem-box"><span class="label">LAP</span><span class="val" id="rc-lap">1/61</span></div>
+              <div class="telem-box"><span class="label">POS</span><span class="val" id="rc-pos">P8</span></div>
+              <div class="telem-box"><span class="label">TYRE</span><span class="val" id="rc-tyre">MEDIUM</span></div>
+              <div class="telem-box"><span class="label">AGE</span><span class="val" id="rc-age">1</span></div>
+              <div class="telem-box wide">
+                <span class="label">FUEL</span>
+                <div class="fuel-track"><div class="fuel-fill" id="rc-fuel-bar"></div></div>
+                <span class="val-small" id="rc-fuel-text">110kg (SAFE)</span>
+              </div>
+              <div class="telem-box"><span class="label">PACE DELTA</span><span class="val" id="rc-delta">+0.00s</span></div>
+              <div class="telem-box"><span class="label">DEG RATE</span><span class="val" id="rc-deg-rate">0.05s/L</span></div>
+            </div>
+            <div class="rc-gaps">
+              <div class="gap-row ahead">
+                <span class="gap-car" id="gap-ahead-car">P7 (#4)</span>
+                <span class="gap-time" id="gap-ahead-time">+1.8s</span>
+              </div>
+              <div class="gap-row behind">
+                <span class="gap-car" id="gap-behind-car">P9 (#14)</span>
+                <span class="gap-time" id="gap-behind-time">-2.4s</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rc-panel rc-track" style="position: relative;">
+            <div id="track-canvas-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
+          </div>
+
+          <div class="rc-panel rc-events">
+            <h3>RACE EVENTS</h3>
+            <div class="event-list" id="event-list"></div>
+          </div>
+        </div>
+
+        <!-- BOTTOM ROW: Strategy AI & Pit Window -->
+        <div class="rc-bottom">
+          <div class="rc-panel rc-engineer">
+            <h3>AI RACE ENGINEER</h3>
+            <div class="engineer-call" id="eng-call">STAY OUT</div>
+            <div class="engineer-details">
+              <div class="detail-row"><span>Optimal Pit:</span><strong id="eng-opt-lap">LAP 31</strong></div>
+              <div class="detail-row"><span>Target Tyre:</span><strong id="eng-opt-tyre">HARD</strong></div>
+              <div class="detail-row"><span>Expected Fuel:</span><strong id="eng-opt-fuel">+0.0kg</strong></div>
+              <div class="detail-row"><span>Confidence:</span><strong id="eng-conf" class="conf-high">HIGH</strong></div>
+            </div>
+            <button id="btn-why" class="btn-outline">WHY?</button>
+          </div>
+
+          <div class="rc-panel rc-battle">
+            <h3>STRATEGY BATTLE</h3>
+            <div class="battle-target" id="battle-target">NO ACTIVE TARGET</div>
+            <div class="battle-stats hidden" id="battle-stats">
+              <div class="stat-col">
+                <span class="label">UNDERCUT PROJECTION</span>
+                <strong class="val positive" id="battle-undercut">+2.4s</strong>
+              </div>
+              <div class="stat-col">
+                <span class="label">RECOMMENDATION</span>
+                <strong class="val" id="battle-rec">ATTACK</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="rc-panel rc-pit">
+            <h3>PIT DECISION</h3>
+            <div class="pit-options">
+              <button class="pit-opt" data-pit="SOFT">S</button>
+              <button class="pit-opt active" data-pit="MEDIUM">M</button>
+              <button class="pit-opt" data-pit="HARD">H</button>
+            </div>
+            <div class="pit-loss-info">
+              <span>Expected Pit Loss:</span>
+              <strong id="pit-loss-val">28.0s</strong>
+            </div>
+            <button class="btn-pit-now" id="btn-manual-pit">PIT THIS LAP</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- WHY MODAL -->
+      <div id="why-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>AI RACE ENGINEER REASONING</h2>
+            <button id="btn-close-why" class="btn-close">×</button>
+          </div>
+          <div class="modal-body" id="why-content"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: TYRE INTELLIGENCE
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-intelligence" class="page hidden" style="flex-direction:column;">
+      <div class="research-page">
+        <!-- Sub-navigation -->
+        <div class="research-sub-nav">
+          <button class="sub-nav-btn active" data-target="sub-ghost-baseline">GHOST BASELINE</button>
+          <button class="sub-nav-btn" data-target="sub-tyre-overview">TYRE OVERVIEW</button>
+          <button class="sub-nav-btn" data-target="sub-compare">COMPARE</button>
+          <button class="sub-nav-btn" data-target="sub-investigate">INVESTIGATE</button>
+        </div>
+
+        <!-- ── Sub: Ghost Baseline ── -->
+        <div id="sub-ghost-baseline" class="sub-panel active">
+          
+          <!-- LIVE SIMULATION BANNER -->
+          <div id="live-sim-banner-ghost" class="live-sim-banner hidden" style="margin-bottom:16px; padding:12px; background:rgba(0,229,255,0.05); border:1px solid rgba(0,229,255,0.2); border-radius:8px;">
+            <div style="font-size:0.75rem; color:var(--cyan); font-weight:bold; letter-spacing:1px; margin-bottom:8px;">LIVE SIMULATION CONNECTED</div>
+            <div style="display:flex; gap:24px;">
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">LAP:</span> <strong id="live-ghost-lap" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">TYRE:</span> <strong id="live-ghost-tyre" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">AGE:</span> <strong id="live-ghost-age" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">MODEL TYRE LOSS:</span> <strong id="live-ghost-loss" style="color:#ff1744;">--</strong></div>
+            </div>
+          </div>
+
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">
+            Ghost Baseline <span class="data-label data-label-estimated">ESTIMATED</span>
+          </h2>
+          <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:16px;">
+            Observed lap time vs model-estimated counterfactual baseline. The shaded area represents estimated tyre-induced pace loss.
+          </p>
+
+          <div class="why-it-matters">
+            <div class="why-it-matters-header"><span>💡</span><h4>Why It Matters</h4></div>
+            <p>Raw lap time combines fuel burn, track evolution, and tyre degradation. The Ghost Baseline strips away the confounders, revealing the tyre-specific contribution to pace.</p>
+          </div>
+
+          <!-- Ghost Baseline Chart -->
+          <div class="research-chart-panel">
+            <h3>Observed vs Ghost Baseline (MEDIUM) <span class="data-label data-label-observed">OBSERVED</span></h3>
+            <p class="chart-subtitle">Ghost Baseline = Model-estimated counterfactual pace under controlled conditions. This is NOT physical rubber wear — it is the estimated tyre contribution to lap time.</p>
+            <div style="height:320px;"><canvas id="chart-ghost-baseline"></canvas></div>
+            <p class="chart-interpretation">The gap between the white (observed) and cyan (ghost baseline) lines is the estimated tyre-induced pace loss. Positive gap = tyre losing performance.</p>
+          </div>
+
+          <!-- Show Math -->
+          <button id="btn-show-math" style="background:rgba(255,255,255,0.05);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 16px;color:var(--text-secondary);cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;margin:16px 0;width:100%;text-align:left;">
+            ▶ Show mathematical details
+          </button>
+          <div id="math-panel" class="sub-panel" style="margin-bottom:16px;">
+            <div class="glass-panel" id="math-content"></div>
+          </div>
+
+          <!-- Lap Attribution Table -->
+          <div class="research-chart-panel">
+            <h3>Lap-by-Lap Attribution <span class="data-label data-label-model">MODEL-DERIVED</span></h3>
+            <p class="chart-subtitle">Per-lap breakdown showing the estimated contribution of each factor.</p>
+            <div style="max-height:300px;overflow-y:auto;">
+              <table class="attribution-table">
+                <thead>
+                  <tr>
+                    <th>Lap</th>
+                    <th>Tyre Age</th>
+                    <th>Observed <span class="data-label data-label-observed">OBS</span></th>
+                    <th>Ghost Baseline <span class="data-label data-label-estimated">EST</span></th>
+                    <th>Tyre Loss</th>
+                    <th>Fuel Effect <span class="data-label data-label-assumed">ASM</span></th>
+                    <th>Track Evol</th>
+                    <th>Residual</th>
+                  </tr>
+                </thead>
+                <tbody id="attribution-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Sub: Tyre Overview ── -->
+        <div id="sub-tyre-overview" class="sub-panel">
+          
+          <!-- LIVE SIMULATION BANNER -->
+          <div id="live-sim-banner-intel" class="live-sim-banner hidden" style="margin-bottom:16px; padding:12px; background:rgba(0,229,255,0.05); border:1px solid rgba(0,229,255,0.2); border-radius:8px;">
+            <div style="font-size:0.75rem; color:var(--cyan); font-weight:bold; letter-spacing:1px; margin-bottom:8px;">LIVE SIMULATION CONNECTED</div>
+            <div style="display:flex; gap:24px;">
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">LAP:</span> <strong id="live-intel-lap" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">TYRE:</span> <strong id="live-intel-tyre" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">AGE:</span> <strong id="live-intel-age" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">FUEL:</span> <strong id="live-intel-fuel" style="color:var(--text-primary);">--</strong></div>
+            </div>
+          </div>
+
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">
+            Tyre Intelligence <span class="data-label data-label-estimated">ESTIMATED</span>
+          </h2>
+          <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">
+            Estimated tyre-induced pace loss extracted from the model. These values come from the 7-step degradation isolation pipeline.
+          </p>
+
+          <div class="why-it-matters">
+            <div class="why-it-matters-header"><span>💡</span><h4>Why It Matters</h4></div>
+            <p>Raw lap time cannot directly tell us tyre degradation because fuel burn can offset tyre performance loss. This page shows the isolated tyre signal for each compound.</p>
+          </div>
+
+          <!-- Methodology Pipeline -->
+          <div class="pipeline-container">
+            <div class="pipeline-steps">
+              <div class="pipeline-step active" data-step="0">OBSERVE</div>
+              <div class="pipeline-step" data-step="1">CLEAN</div>
+              <div class="pipeline-step" data-step="2">TRACK EVOL</div>
+              <div class="pipeline-step" data-step="3">FUEL SEP</div>
+              <div class="pipeline-step" data-step="4">ANOMALY</div>
+              <div class="pipeline-step" data-step="5">TYRE FIT</div>
+              <div class="pipeline-step" data-step="6">VALIDATE</div>
+            </div>
+            <div class="pipeline-detail" id="pipeline-detail"></div>
+          </div>
+
+          <!-- Compound Cards -->
+          <div id="intel-overview" style="display:flex;flex-direction:column;gap:16px;margin-top:24px;"></div>
+        </div>
+
+        <!-- ── Sub: Compare ── -->
+        <div id="sub-compare" class="sub-panel">
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">
+            Compare Compounds <span class="data-label data-label-estimated">ESTIMATED</span>
+          </h2>
+          <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">
+            Side-by-side comparison of estimated tyre-induced pace loss across compounds.
+          </p>
+          <div id="compare-content"></div>
+          <div class="research-chart-panel">
+            <h3>Overlay: Estimated Pace Loss by Compound</h3>
+            <div style="height:300px;"><canvas id="chart-compare"></canvas></div>
+          </div>
+        </div>
+
+        <!-- ── Sub: Investigate ── -->
+        <div id="sub-investigate" class="sub-panel">
+          <!-- LIVE SIMULATION BANNER -->
+          <div id="live-sim-banner-investigate" class="live-sim-banner hidden" style="margin-bottom:16px; padding:12px; background:rgba(0,229,255,0.05); border:1px solid rgba(0,229,255,0.2); border-radius:8px;">
+            <div style="font-size:0.75rem; color:var(--cyan); font-weight:bold; letter-spacing:1px; margin-bottom:8px;">LIVE SIMULATION CONNECTED</div>
+            <div style="display:flex; gap:24px;">
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">RACE STATUS:</span> <strong id="live-inv-status" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">AI RECOMMENDATION:</span> <strong id="live-inv-rec" style="color:var(--text-primary);">--</strong></div>
+            </div>
+          </div>
+
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:16px;">Investigate</h2>
+          <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:16px;">
+            Question-driven analysis. Select a question to explore.
+          </p>
+          <div class="investigate-questions">
+            <button class="investigate-q-btn" data-question="1">Is tyre degradation significant?</button>
+            <button class="investigate-q-btn" data-question="2">Why did pace change?</button>
+            <button class="investigate-q-btn" data-question="3">How uncertain is the estimate?</button>
+          </div>
+          <div id="investigate-answer"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: MODEL VALIDATION
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-validation" class="page hidden" style="flex-direction:column;">
+      <div class="research-page">
+        <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:16px;">Model Validation & Diagnostics</h2>
+        <div id="validation-content"></div>
+
+        <!-- Model Diagnostics -->
+        <div class="glass-panel" style="margin-top:24px;">
+          <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:12px;">Model Diagnostics & Identifiability</h3>
+          <div id="model-info-grid" style="display:flex;flex-wrap:wrap;gap:15px;"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: RESEARCH STORY
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-story" class="page active" style="flex-direction:column;">
+      <div class="research-page" style="max-width:1000px;">
+        <div class="story-container">
+          <!-- Progress -->
+          <div class="story-progress">
+            <div class="story-progress-bar filled"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+          </div>
+          <!-- Content -->
+          <div id="story-content"></div>
+        </div>
+        <!-- Navigation -->
+        <div class="story-nav">
+          <button id="story-prev" class="story-nav-btn story-nav-prev" disabled>← Previous</button>
+          <button id="story-next" class="story-nav-btn story-nav-next">Next →</button>
+        </div>
+      </div>
+    </main>
+
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: REPORT
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-report" class="page hidden" style="flex-direction:column;">
+      <div class="research-page">
+        <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">
+          Research Summary
+        </h2>
+        <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:16px;">
+          Concise report of the tyre intelligence findings for the current session.
+        </p>
+        <div id="report-content"></div>
+      </div>
+    </main>
+
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
