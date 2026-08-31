@@ -32,6 +32,10 @@ const state = {
   eventLapsRemaining: 0,
   queuedEvents: [], // { lap: 28, type: 'SC', duration: 3 }
   eventsLog: [],
+  lapHistory: {}, // Records positions per lap for lap chart
+  pitHistory: [], // Records pit stops: { lap, carId, duration, compound }
+  penalties: [], // Records penalties: { lap, carId, type, time }
+  weatherHistory: { airTemp: [], trackTemp: [], laps: [] },
   userCar: null,
 };
 
@@ -97,6 +101,7 @@ export function initSimulation(data) {
   DOM.gapBehindCar = document.getElementById('gap-behind-car');
   DOM.gapBehindTime = document.getElementById('gap-behind-time');
   DOM.statusBanner = document.getElementById('rc-status-banner');
+  DOM.lapHistoryBody = document.getElementById('lap-history-body');
   DOM.eventList = document.getElementById('event-list');
   
   // Engineer
@@ -200,6 +205,19 @@ function startRace(scenarioId) {
   state.lap = 1;
   state.eventsLog = [];
   state.queuedEvents = [];
+  state.lapHistory = {};
+  state.pitHistory = [];
+  state.penalties = [];
+  
+  const baseAirTemp = raceConfig.condition === 'WET' ? 22 : 30;
+  const baseTrackTemp = raceConfig.condition === 'WET' ? 24 : 38;
+  
+  state.weatherHistory = {
+    airTemp: [baseAirTemp],
+    trackTemp: [baseTrackTemp],
+    laps: [1]
+  };
+  
   state.raceEvent = 'GREEN';
   setRaceState('GREEN');
   
@@ -211,6 +229,7 @@ function startRace(scenarioId) {
   }
   
   DOM.eventList.innerHTML = '';
+  if (DOM.lapHistoryBody) DOM.lapHistoryBody.innerHTML = '';
   DOM.btnPlayPause.textContent = '⏸';
   
   // Generate 20 cars
@@ -232,13 +251,17 @@ function startRace(scenarioId) {
     if (raceSetup.mechanical.balance === 'FRONT') setupOffset += 0.1;
     
     state.userCar.baseLapTime += setupOffset;
+    state.userCar.setup = {
+      downforceLevel: raceSetup.aerodynamics.downforceLevel,
+      balance: raceSetup.mechanical.balance
+    };
   }
   
   updateStrategyCompound(state.userCar.compound);
   
   syncCarsToSVG(state.cars, DOM.trackSvg);
   
-  logEvent(`RACE STARTED - ${scenarioId} MODE`);
+  logEvent(`SESSION STARTED - ${scenarioId.toUpperCase()} MODE`, 'status');
   
   lastTick = performance.now();
   state.active = true;
@@ -259,10 +282,10 @@ function triggerUserPit() {
   
   if (raceSetup && !raceSetup.ruleset.refuellingDuringRace) {
     state.userCar.refuelTargetKg = 0;
-    logEvent(`CAR #11 PIT REQUESTED - ${state.userCar.compound} to ${targetCompound} (No Refuelling)`, 'pit');
+    logEvent(`CAR 11 PIT REQUESTED - COMPOUND CHANGE TO ${targetCompound.toUpperCase()}`, 'pit');
   } else {
     state.userCar.refuelTargetKg = calculateOptimalRefuelAmount(state.totalLaps - state.lap);
-    logEvent(`CAR #11 PIT REQUESTED - ${state.userCar.compound} to ${targetCompound}, +${state.userCar.refuelTargetKg.toFixed(1)}kg`, 'pit');
+    logEvent(`CAR 11 PIT REQUESTED - COMPOUND CHANGE TO ${targetCompound.toUpperCase()}, +${state.userCar.refuelTargetKg.toFixed(1)}kg`, 'pit');
   }
 }
 
@@ -273,10 +296,10 @@ function triggerAIPit(car) {
   
   if (raceSetup && !raceSetup.ruleset.refuellingDuringRace) {
     car.refuelTargetKg = 0;
-    logEvent(`CAR #${car.number} PIT REQUESTED - ${car.compound} to ${targetCompound}`);
+    logEvent(`CAR ${car.number} PIT REQUESTED - COMPOUND CHANGE TO ${targetCompound.toUpperCase()}`);
   } else {
     car.refuelTargetKg = calculateOptimalRefuelAmount(state.totalLaps - state.lap);
-    logEvent(`CAR #${car.number} PIT REQUESTED - ${car.compound} to ${targetCompound}, +${car.refuelTargetKg.toFixed(1)}kg`);
+    logEvent(`CAR ${car.number} PIT REQUESTED - COMPOUND CHANGE TO ${targetCompound.toUpperCase()}, +${car.refuelTargetKg.toFixed(1)}kg`);
   }
 }
 
@@ -331,6 +354,16 @@ function simulationLoop(now) {
         const requiredTime = Math.max(TYRE_CHANGE_TIME_SEC, (car.refuelTargetKg || 0) / REFUEL_RATE_KG_PER_SEC);
         if (car.stopTimer >= requiredTime) {
           car.pitState = 'OUT';
+          
+          state.pitHistory.push({
+            lap: state.lap,
+            carId: car.id,
+            carNumber: car.number,
+            color: car.color,
+            duration: car.stopTimer,
+            compound: car.compound
+          });
+          
           if (car.refuelTargetKg) {
             car.fuelPct = Math.min(100, car.fuelPct + (car.refuelTargetKg / 1.1));
           }
@@ -360,7 +393,7 @@ function simulationLoop(now) {
     }
     
     // Calculate pacing
-    let degDelta = getDegradationDelta(car.compound, car.tyreAge);
+    let degDelta = getDegradationDelta(car.compound, car.tyreAge, car.setup);
     // Fuel effect: cars get faster as they burn fuel (approx 0.05s per kg)
     const fuelEffect = ((100 - car.fuelPct) * 0.05); 
     
@@ -378,6 +411,31 @@ function simulationLoop(now) {
     
     // Lap crossing
     if (car.progress >= 1.0) {
+      const thisLapTime = car.totalRaceTime - car.lapStartTime;
+      car.lapStartTime = car.totalRaceTime;
+      car.lastLapTime = thisLapTime;
+      car.lapTimes.push(thisLapTime);
+      
+      // Lap History Log for User
+      if (car.isUser && DOM.lapHistoryBody) {
+        const m = Math.floor(thisLapTime / 60);
+        const s = (thisLapTime % 60).toFixed(3).padStart(6, '0');
+        const lapTimeString = `${m}:${s}`;
+        
+        const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        row.innerHTML = `
+          <td style="padding: 6px; color: #fff;">${state.lap}</td>
+          <td style="padding: 6px; color: ${car.position === 1 ? 'var(--cyan)' : '#aaa'};">P${car.position}</td>
+          <td style="padding: 6px; color: ${car.tyreAge > 60 ? 'var(--red)' : '#aaa'};">${Math.max(0, 100 - car.tyreAge).toFixed(1)}%</td>
+          <td style="padding: 6px; color: #fff;">${lapTimeString}</td>
+        `;
+        DOM.lapHistoryBody.prepend(row);
+      }
+      if (!car.bestLapTime || thisLapTime < car.bestLapTime) {
+        car.bestLapTime = thisLapTime;
+      }
+      
       car.progress -= 1.0;
       car.currentLap++;
       car.lapsCompleted++;
@@ -386,6 +444,37 @@ function simulationLoop(now) {
       if (car.isUser) {
         newLapCrossed = true;
         state.lap = car.currentLap;
+        
+        // Update weather slightly each lap
+        const lastAir = state.weatherHistory.airTemp[state.weatherHistory.airTemp.length - 1];
+        const lastTrack = state.weatherHistory.trackTemp[state.weatherHistory.trackTemp.length - 1];
+        
+        // Random walk
+        const newAir = lastAir + (Math.random() * 0.4 - 0.2);
+        // Track temp follows air but with more variance
+        const newTrack = lastTrack + (newAir - lastAir) * 1.5 + (Math.random() * 0.6 - 0.3);
+        
+        state.weatherHistory.airTemp.push(newAir);
+        state.weatherHistory.trackTemp.push(newTrack);
+        state.weatherHistory.laps.push(state.lap);
+      }
+      
+      // Random chance for AI penalty
+      if (!car.isUser && Math.random() < 0.005) { // 0.5% per lap
+        const type = Math.random() > 0.5 ? 'Track Limits' : 'Collision';
+        state.penalties.push({
+          lap: state.lap,
+          carId: car.id,
+          carNumber: car.number,
+          type: type,
+          time: 5
+        });
+        car.totalRaceTime += 5.0; // Apply 5s penalty
+        const turn = Math.floor(Math.random() * 15) + 1;
+        const msg = type === 'Track Limits' 
+          ? (Math.random() > 0.5 ? `CAR ${car.number} TIME DELETED - TRACK LIMITS AT TURN ${turn}` : `BLACK AND WHITE FLAG FOR CAR ${car.number} - TRACK LIMITS`)
+          : `CAR ${car.number} 5 SECOND TIME PENALTY - CAUSING A COLLISION AT TURN ${turn}`;
+        logEvent(msg, type === 'Track Limits' ? 'flag' : 'penalty');
       }
       
       // Check AI Pit
@@ -418,7 +507,7 @@ function handleLapEvents() {
     state.raceEvent = pending.type;
     state.eventLapsRemaining = pending.duration;
     setRaceState(pending.type);
-    logEvent(`${pending.type} DEPLOYED`, 'sc');
+    logEvent(`INCIDENT - ${pending.type.toUpperCase()} DEPLOYED`, 'sc');
     
     state.queuedEvents = state.queuedEvents.filter(e => e.lap !== state.lap);
   }
@@ -426,7 +515,7 @@ function handleLapEvents() {
   if (state.eventLapsRemaining > 0) {
     state.eventLapsRemaining--;
     if (state.eventLapsRemaining === 0) {
-      logEvent(`TRACK CLEAR`, 'green');
+      logEvent(`GREEN FLAG - TRACK CLEAR`, 'green');
       state.raceEvent = 'GREEN';
       setRaceState('GREEN');
     }
@@ -436,7 +525,7 @@ function handleLapEvents() {
       state.raceEvent = 'SC';
       state.eventLapsRemaining = 3;
       setRaceState('SC');
-      logEvent(`SAFETY CAR DEPLOYED`, 'sc');
+      logEvent(`INCIDENT - SAFETY CAR DEPLOYED`, 'sc');
     }
   }
 }
@@ -454,13 +543,25 @@ function updatePositionsAndGaps() {
   // Calculate relative gaps
   state.cars.forEach((car, index) => {
     if (car.position > index + 1) {
-      logEvent(`CAR #${car.number} overtakes for P${index + 1}`);
+      logEvent(`CAR ${car.number} OVERTAKES FOR P${index + 1}`);
       // Swap lanes
       car.lane = (car.lane === 1) ? -1 : 1; 
     } else if (car.position < index + 1) {
       car.lane = 0; // return to racing line eventually
     }
     car.position = index + 1;
+  });
+  
+  if (!state.lapHistory) state.lapHistory = {};
+  
+  // Create history entry for current lap if it doesn't exist
+  if (!state.lapHistory[state.lap]) {
+    state.lapHistory[state.lap] = {};
+  }
+  
+  // Continuously update the current lap's position
+  state.cars.forEach(car => {
+    state.lapHistory[state.lap][car.id] = car.position;
   });
 }
 
@@ -480,8 +581,8 @@ function updateUI() {
   if (u.fuelPct < 5) { fuelText = 'CRITICAL'; DOM.rcFuelBar.style.background = 'var(--red)'; }
   DOM.rcFuelText.textContent = `${(u.fuelPct * 1.1).toFixed(1)}kg (${fuelText})`;
   
-  DOM.rcDelta.textContent = `+${getDegradationDelta(u.compound, u.tyreAge).toFixed(2)}s`;
-  DOM.rcDegRate.textContent = `${getMarginalDegRate(u.compound, u.tyreAge).toFixed(2)}s/L`;
+  DOM.rcDelta.textContent = `+${getDegradationDelta(u.compound, u.tyreAge, u.setup).toFixed(2)}s`;
+  DOM.rcDegRate.textContent = `${getMarginalDegRate(u.compound, u.tyreAge, u.setup).toFixed(2)}s/L`;
   
   // Gaps
   const userIdx = state.cars.findIndex(c => c.isUser);
@@ -516,7 +617,7 @@ function updateUI() {
   }
   
   // Strategy Recommendation
-  const rec = getRecommendation(u.compound, u.tyreAge, state.lap, u.fuelPct);
+  const rec = getRecommendation(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup);
   DOM.engCall.textContent = rec.state;
   if (rec.state.includes('PIT')) {
     DOM.engCall.className = 'engineer-call pit';
@@ -528,41 +629,17 @@ function updateUI() {
   if (DOM.engOptTyre) DOM.engOptTyre.textContent = rec.nextCompound;
   if (DOM.engOptFuel) DOM.engOptFuel.textContent = `+${rec.fuelNeeded.toFixed(1)}kg`;
   
-  // Undercut battle
-  if (userIdx > 0) {
-    const ahead = state.cars[userIdx - 1];
-    const gap = (ahead.progress - u.progress) * BASE_LAP_TIME;
-    if (gap < 2.0 && ahead.tyreAge > 10) {
-      DOM.battleTarget.classList.add('hidden');
-      DOM.battleStats.classList.remove('hidden');
-      
-      const undercut = evaluate_undercut(ahead.compound, ahead.tyreAge, gap, state.totalLaps - state.lap, u.compound);
-      DOM.battleUndercut.textContent = `${undercut.net_gain > 0 ? '+' : ''}${Number(undercut.net_gain).toFixed(1)}s`;
-      DOM.battleUndercut.className = undercut.net_gain > 0 ? 'val positive' : 'val negative';
-      
-      DOM.battleRec.textContent = undercut.recommended ? 'ATTACK / PIT' : 'HOLD';
-      DOM.battleRec.style.color = undercut.recommended ? 'var(--red)' : 'var(--text-primary)';
-    } else {
-      DOM.battleTarget.classList.remove('hidden');
-      DOM.battleStats.classList.add('hidden');
-    }
-  } else {
-    DOM.battleTarget.textContent = 'NO ACTIVE TARGET';
-    DOM.battleTarget.classList.remove('hidden');
-    DOM.battleStats.classList.add('hidden');
-  }
-
   // Broadcast state to any listeners (e.g. Research Pages)
   stateListeners.forEach(cb => cb(state));
 }
 
 function populateWhyModal() {
   const u = state.userCar;
-  const rec = getRecommendation(u.compound, u.tyreAge, state.lap);
+  const rec = getRecommendation(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup);
   
   const html = `
     <ol>
-      <li><strong>Estimated Tyre-Induced Pace Loss:</strong> Your ${u.compound} tyres are losing +${getDegradationDelta(u.compound, u.tyreAge).toFixed(2)}s per lap compared to fresh rubber.</li>
+      <li><strong>Estimated Tyre-Induced Pace Loss:</strong> Your ${u.compound} tyres are losing +${getDegradationDelta(u.compound, u.tyreAge, u.setup).toFixed(2)}s per lap compared to fresh rubber.</li>
       <li><strong>Remaining Distance:</strong> ${state.totalLaps - state.lap} laps remaining to calculate over.</li>
       <li><strong>Pit Loss:</strong> A stop under current ${state.raceEvent} conditions costs approx ${state.raceEvent === 'GREEN' ? '28s' : '18s'}.</li>
       <li><strong>Counterfactual Simulation:</strong> The deterministic O(N²) search identifies Lap ${rec.optimalLap} as minimizing total race time under current assumptions.</li>
@@ -574,6 +651,7 @@ function populateWhyModal() {
 }
 
 function finishRace() {
+  logEvent('SESSION FINISHED', 'status');
   stopSimulation();
   DOM.raceControl.classList.add('hidden');
   DOM.finishScreen.classList.add('active');
@@ -590,7 +668,7 @@ function finishRace() {
   document.getElementById('finish-stops').textContent = u.pitStops;
   
   // Counterfactual strategy review
-  const rec = getRecommendation(u.compound, u.tyreAge, state.lap);
+  const rec = getRecommendation(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup);
   document.getElementById('finish-time-saved').textContent = `+${(u.pitStops * 4.2).toFixed(1)}s`;
   
   // Update what-if text if it exists

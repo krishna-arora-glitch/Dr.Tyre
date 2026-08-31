@@ -43,8 +43,21 @@ export function generateGrid(userStartingPos, basePace = 94.0) {
     const performanceOffset = (i) * 0.15; // 0.15s slower per grid slot
     let aiBaseLapTime = basePace + performanceOffset;
 
+    // Randomize Setup
+    const downforceLevels = ['LOW', 'MEDIUM', 'HIGH'];
+    const balances = ['FRONT', 'BALANCED', 'REAR'];
+    const setup = {
+      downforceLevel: downforceLevels[Math.floor(Math.random() * downforceLevels.length)],
+      balance: balances[Math.floor(Math.random() * balances.length)]
+    };
+
+    let setupOffset = 0;
+    if (setup.downforceLevel === 'HIGH') setupOffset -= 0.3;
+    if (setup.downforceLevel === 'LOW') setupOffset += 0.2;
+    if (setup.balance === 'FRONT') setupOffset += 0.1;
+
     // Small random noise to base lap time
-    aiBaseLapTime += (Math.random() * 0.4 - 0.2);
+    aiBaseLapTime += (Math.random() * 0.4 - 0.2) + setupOffset;
     
     grid.push({
       id: isUser ? 'USER' : `AI_${dNum}`,
@@ -57,6 +70,7 @@ export function generateGrid(userStartingPos, basePace = 94.0) {
       compound: compound,
       tyreAge: 1,
       fuelPct: 100, // Starts at 100%
+      setup: setup,
       baseLapTime: aiBaseLapTime,
       totalRaceTime: (i * 1.5), // Starting gap (1.5s between cars on grid)
       currentLap: 1,
@@ -65,6 +79,12 @@ export function generateGrid(userStartingPos, basePace = 94.0) {
       isPitting: false,
       pitStops: 0,
       lane: (i % 2 === 0) ? 1 : -1, // Stagger on grid
+      
+      // Tracking
+      lapStartTime: 0,
+      lastLapTime: null,
+      bestLapTime: null,
+      lapTimes: [],
     });
   }
   

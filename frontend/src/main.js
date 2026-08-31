@@ -15,10 +15,17 @@ import { initSubNav, initTyreIntelligence, initGhostBaseline,
 } from './research/research.js';
 import { initStoryMode } from './research/story.js';
 import { initSetup } from './setup/setup.js';
+import { initCompetitorsPage } from './competitors/competitorsPage.js';
+import { initLapChart, updateLapChart } from './simulation/lap-chart.js';
+import { initExtraCharts, updateExtraCharts } from './simulation/extra-charts.js';
+import { getSimulationState } from './simulation/simulation.js';
 
 let modelData = null;
 let researchInitialized = false;
 let storyInitialized = false;
+
+// Global car filter state for charts (Set of car numbers)
+export let activeCarFilters = new Set();
 
 // ── Load Model Data ────────────────────────────────────────────
 async function loadModelData() {
@@ -94,8 +101,11 @@ function initTabs() {
         initSetup();
       } else if (targetTab === 'simulation' && modelData) {
         initSimulation(modelData);
-      } else if (targetTab === 'intelligence' && modelData) {
         initResearchPages(modelData);
+        initLapChart();
+        initExtraCharts();
+      } else if (targetTab === 'competitors' && modelData) {
+        initCompetitorsPage(modelData);
       } else if (targetTab === 'validation' && modelData) {
         initValidation(modelData);
         populateModelInfo(modelData);
@@ -119,13 +129,103 @@ function initResearchPages(data) {
   researchInitialized = true;
 
   // Wire sub-navigation
-  initSubNav('page-intelligence');
+  initSubNav('rc-panel-tire-strategy');
+  initRcChartsNav();
 
   // Initialize all research sub-panels
   initGhostBaseline(data);
   initTyreIntelligence(data);
   initCompare(data);
   initInvestigate(data);
+}
+
+function initRcChartsNav() {
+  const container = document.getElementById('rc-charts-container');
+  if (!container) return;
+  const navContainer = container.querySelector('.research-sub-nav');
+  if (!navContainer) return;
+  
+  const btns = navContainer.querySelectorAll('.sub-nav-btn');
+  const panels = container.querySelectorAll(':scope > .sub-panel');
+  
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const target = document.getElementById(btn.dataset.target);
+      if (target) target.classList.add('active');
+    });
+  });
+}
+
+// ── Car Filters ────────────────────────────────────────────────
+function initCarFilters(data) {
+  const bar = document.getElementById('car-filter-bar');
+  if (!bar) return;
+  
+  // Clear except the label
+  const label = bar.querySelector('span');
+  bar.innerHTML = '';
+  if (label) bar.appendChild(label);
+  
+  // Extract cars from grid if available
+  const cars = data?.session?.drivers || []; // fallback
+  // Actually we need the 20 cars from the simulation grid. 
+  // We can just rely on the race state to populate it once when simulation starts.
+}
+
+export function populateCarFilters(simState) {
+  const bar = document.getElementById('car-filter-bar');
+  if (!bar || bar.dataset.populated === 'true') return;
+  
+  simState.cars.forEach(car => {
+    // Only the user's car is active by default
+    const isActive = car.isUser;
+    if (isActive) {
+      activeCarFilters.add(car.number);
+    }
+    
+    const btn = document.createElement('button');
+    btn.className = isActive ? 'car-filter-btn active' : 'car-filter-btn';
+    btn.textContent = car.number;
+    btn.style.border = `2px solid ${car.color}`;
+    btn.style.padding = '4px 12px';
+    btn.style.borderRadius = '4px';
+    btn.style.cursor = 'pointer';
+    btn.style.fontWeight = 'bold';
+    btn.style.fontFamily = 'var(--font-mono)';
+    
+    if (isActive) {
+      btn.style.backgroundColor = car.color;
+      btn.style.color = '#fff';
+    } else {
+      btn.style.backgroundColor = 'transparent';
+      btn.style.color = car.color;
+    }
+    
+    btn.addEventListener('click', () => {
+      if (activeCarFilters.has(car.number)) {
+        activeCarFilters.delete(car.number);
+        btn.classList.remove('active');
+        btn.style.backgroundColor = 'transparent';
+        btn.style.color = car.color;
+      } else {
+        activeCarFilters.add(car.number);
+        btn.classList.add('active');
+        btn.style.backgroundColor = car.color;
+        btn.style.color = '#fff';
+      }
+      
+      const currentState = getSimulationState();
+      updateLapChart(currentState);
+      updateExtraCharts(currentState);
+    });
+    
+    bar.appendChild(btn);
+  });
+  
+  bar.dataset.populated = 'true';
 }
 
 // ── Populate Model Info (Validation page) ──────────────────────
@@ -318,9 +418,12 @@ async function bootstrap() {
     initStoryMode(modelData);
     storyInitialized = true;
 
-    // Wire simulation state to research pages
+    // Wire simulation state to research pages and lap chart
     onSimulationUpdate((simState) => {
+      populateCarFilters(simState);
       updateResearchWithSimulationState(simState, modelData);
+      updateLapChart(simState);
+      updateExtraCharts(simState);
     });
   }
 }

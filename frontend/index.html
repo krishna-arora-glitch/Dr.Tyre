@@ -31,7 +31,7 @@
         <button class="nav-tab" data-target="panel-track-select" id="tab-track-select">TRACK SETUP</button>
         <button class="nav-tab" data-target="panel-car-setup" id="tab-car-setup">CAR SETUP</button>
         <button class="nav-tab" data-target="panel-simulation" id="tab-simulation">RACE CONTROL</button>
-        <button class="nav-tab" data-target="panel-intelligence" id="tab-intelligence">TYRE INTELLIGENCE</button>
+        <button class="nav-tab" data-target="panel-competitors" id="tab-competitors">COMPETITOR COMPARISON</button>
         <button class="nav-tab" data-target="panel-validation" id="tab-validation">MODEL VALIDATION</button>
         <button class="nav-tab" data-target="panel-report" id="tab-report">REPORT</button>
       </nav>
@@ -47,7 +47,7 @@
     <!-- ═══════════════════════════════════════════════════════════
          PAGE: TRACK SELECTION
          ═══════════════════════════════════════════════════════════ -->
-    <main id="page-track-select" class="page hidden">
+    <main id="page-track-select" class="page hidden" style="overflow-y: auto;">
       <div class="track-select-container">
         <div class="track-select-header">
           <h2>SELECT CIRCUIT</h2>
@@ -319,7 +319,7 @@
     <!-- ═══════════════════════════════════════════════════════════
          PAGE: RACE CONTROL (Simulation)
          ═══════════════════════════════════════════════════════════ -->
-    <main id="page-simulation" class="page hidden">
+    <main id="page-simulation" class="page hidden" style="overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column;">
       
       <!-- START SCREEN -->
       <div id="start-screen" class="sim-overlay-screen active">
@@ -441,66 +441,82 @@
 
         <!-- BOTTOM ROW: Strategy AI & Pit Window -->
         <div class="rc-bottom">
-          <div class="rc-panel rc-engineer">
-            <h3>AI RACE ENGINEER</h3>
-            <div class="engineer-call" id="eng-call">STAY OUT</div>
-            <div class="engineer-details">
-              <div class="detail-row"><span>Optimal Pit:</span><strong id="eng-opt-lap">LAP 31</strong></div>
-              <div class="detail-row"><span>Target Tyre:</span><strong id="eng-opt-tyre">HARD</strong></div>
-              <div class="detail-row"><span>Expected Fuel:</span><strong id="eng-opt-fuel">+0.0kg</strong></div>
-              <div class="detail-row"><span>Confidence:</span><strong id="eng-conf" class="conf-high">HIGH</strong></div>
+          <!-- Left: Merged Engineer & Pit -->
+          <div class="rc-merged-left" style="display: flex; gap: var(--space-md); flex: 1;">
+            <div class="rc-panel rc-engineer" style="flex: 1;">
+              <h3>AI RACE ENGINEER</h3>
+              <div class="engineer-call" id="eng-call">STAY OUT</div>
+              <div class="engineer-details">
+                <div class="detail-row"><span>Optimal Pit:</span><strong id="eng-opt-lap">LAP 31</strong></div>
+                <div class="detail-row"><span>Target Tyre:</span><strong id="eng-opt-tyre">HARD</strong></div>
+                <div class="detail-row"><span>Expected Fuel:</span><strong id="eng-opt-fuel">+0.0kg</strong></div>
+                <div class="detail-row"><span>Confidence:</span><strong id="eng-conf" class="conf-high">HIGH</strong></div>
+              </div>
+              <button id="btn-why" class="btn-outline">WHY?</button>
             </div>
-            <button id="btn-why" class="btn-outline">WHY?</button>
+
+            <div class="rc-panel rc-pit" style="flex: 1;">
+              <h3>PIT DECISION</h3>
+              <div class="pit-options">
+                <button class="pit-opt" data-pit="SOFT">S</button>
+                <button class="pit-opt active" data-pit="MEDIUM">M</button>
+                <button class="pit-opt" data-pit="HARD">H</button>
+              </div>
+              <div class="pit-loss-info">
+                <span>Expected Pit Loss:</span>
+                <strong id="pit-loss-val">28.0s</strong>
+              </div>
+              <button class="btn-pit-now" id="btn-manual-pit">PIT THIS LAP</button>
+            </div>
           </div>
 
-          <div class="rc-panel rc-battle">
-            <h3>STRATEGY BATTLE</h3>
-            <div class="battle-target" id="battle-target">NO ACTIVE TARGET</div>
-            <div class="battle-stats hidden" id="battle-stats">
-              <div class="stat-col">
-                <span class="label">UNDERCUT PROJECTION</span>
-                <strong class="val positive" id="battle-undercut">+2.4s</strong>
-              </div>
-              <div class="stat-col">
-                <span class="label">RECOMMENDATION</span>
-                <strong class="val" id="battle-rec">ATTACK</strong>
-              </div>
+          <!-- Right: Lap History -->
+          <div class="rc-panel rc-lap-history" style="flex: 2; display: flex; flex-direction: column;">
+            <h3>LAP HISTORY</h3>
+            <div class="lap-history-table-container" style="overflow-y: auto; flex: 1; max-height: 220px; padding-right: 4px;">
+              <table style="width: 100%; text-align: left; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.8rem;">
+                <thead style="position: sticky; top: 0; background: var(--bg-glass); z-index: 2;">
+                  <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted);">
+                    <th style="padding: 6px;">LAP</th>
+                    <th style="padding: 6px;">POS</th>
+                    <th style="padding: 6px;">TYRE DEG</th>
+                    <th style="padding: 6px;">LAP TIME</th>
+                  </tr>
+                </thead>
+                <tbody id="lap-history-body">
+                  <!-- Rows added dynamically -->
+                </tbody>
+              </table>
             </div>
-          </div>
-
-          <div class="rc-panel rc-pit">
-            <h3>PIT DECISION</h3>
-            <div class="pit-options">
-              <button class="pit-opt" data-pit="SOFT">S</button>
-              <button class="pit-opt active" data-pit="MEDIUM">M</button>
-              <button class="pit-opt" data-pit="HARD">H</button>
-            </div>
-            <div class="pit-loss-info">
-              <span>Expected Pit Loss:</span>
-              <strong id="pit-loss-val">28.0s</strong>
-            </div>
-            <button class="btn-pit-now" id="btn-manual-pit">PIT THIS LAP</button>
           </div>
         </div>
       </div>
       
-      <!-- WHY MODAL -->
-      <div id="why-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2>AI RACE ENGINEER REASONING</h2>
-            <button id="btn-close-why" class="btn-close">×</button>
-          </div>
-          <div class="modal-body" id="why-content"></div>
+      <!-- RACE CONTROL CHARTS NAV -->
+      <div id="rc-charts-container" style="padding: 0 40px; margin-top: 32px; display: flex; flex-direction: column; flex: 1 1 auto;">
+<div class="research-sub-nav" style="margin-bottom: 24px;">
+          <button class="sub-nav-btn active" data-target="rc-panel-lap-chart">POSITION</button>
+          <button class="sub-nav-btn" data-target="rc-panel-tire-strategy">TIRE STRATEGY</button>
+          <button class="sub-nav-btn" data-target="rc-panel-fastest-laps">FASTEST LAPS</button>
+          <button class="sub-nav-btn" data-target="rc-panel-pit-stops">PIT STOPS</button>
+          <button class="sub-nav-btn" data-target="rc-panel-weather">WEATHER</button>
+          <button class="sub-nav-btn" data-target="rc-panel-penalties">PENALTIES</button>
         </div>
-      </div>
-    </main>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         PAGE: TYRE INTELLIGENCE
-         ═══════════════════════════════════════════════════════════ -->
-    <main id="page-intelligence" class="page hidden" style="flex-direction:column;">
-      <div class="research-page">
+        <!-- LAP CHART PANEL -->
+        <div id="rc-panel-lap-chart" class="sub-panel active">
+          <div class="rc-panel" style="height: 500px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 12px; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--cyan); font-family: var(--font-display); letter-spacing: 2px;">LIVE POSITION CHART</h3>
+            <div style="flex: 1; min-height: 0; position: relative;">
+              <canvas id="chart-lap-history"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- TIRE STRATEGY PANEL (Contains the research page) -->
+        <div id="rc-panel-tire-strategy" class="sub-panel">
+
+<div class="research-page">
         <!-- Sub-navigation -->
         <div class="research-sub-nav">
           <button class="sub-nav-btn active" data-target="sub-ghost-baseline">GHOST BASELINE</button>
@@ -655,6 +671,114 @@
             <button class="investigate-q-btn" data-question="3">How uncertain is the estimate?</button>
           </div>
           <div id="investigate-answer"></div>
+        </div>
+      </div>
+      </div>
+<!-- WHY MODAL -->
+      <div id="why-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>AI RACE ENGINEER REASONING</h2>
+            <button id="btn-close-why" class="btn-close">×</button>
+          </div>
+          <div class="modal-body" id="why-content"></div>
+        </div>
+      </div>
+    
+        <!-- FASTEST LAPS PANEL -->
+        <div id="rc-panel-fastest-laps" class="sub-panel">
+          <div class="rc-panel" style="height: 500px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 12px; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--cyan); font-family: var(--font-display); letter-spacing: 2px;">FASTEST LAPS</h3>
+            <div style="flex: 1; min-height: 0; position: relative;">
+              <canvas id="chart-fastest-laps"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PIT STOPS PANEL -->
+        <div id="rc-panel-pit-stops" class="sub-panel">
+          <div class="rc-panel" style="height: 500px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 12px; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--cyan); font-family: var(--font-display); letter-spacing: 2px;">PIT STOP HISTORY</h3>
+            <div style="flex: 1; min-height: 0; position: relative;">
+              <canvas id="chart-pit-stops"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- WEATHER PANEL -->
+        <div id="rc-panel-weather" class="sub-panel">
+          <div class="rc-panel" style="height: 500px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 12px; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--cyan); font-family: var(--font-display); letter-spacing: 2px;">WEATHER CONDITIONS</h3>
+            <div style="flex: 1; min-height: 0; position: relative;">
+              <canvas id="chart-weather"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PENALTIES PANEL -->
+        <div id="rc-panel-penalties" class="sub-panel">
+          <div class="rc-panel" style="height: 500px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 12px; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--cyan); font-family: var(--font-display); letter-spacing: 2px;">PENALTIES LOG</h3>
+            <div id="penalties-list" style="flex: 1; min-height: 0; position: relative; overflow-y: auto;">
+              <table class="attribution-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Lap</th>
+                    <th>Driver</th>
+                    <th>Penalty</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="penalties-tbody">
+                  <!-- JS populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        </div>
+
+
+        
+        <!-- CAR FILTER BAR -->
+        <div id="car-filter-bar" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle);">
+          <span style="color: var(--text-muted); font-size: 0.8rem; display: flex; align-items: center; margin-right: 8px;">FILTER:</span>
+          <!-- populated dynamically -->
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: COMPETITOR COMPARISON
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-competitors" class="page hidden" style="flex-direction:column;">
+      <div class="research-page" style="max-width: 1200px;">
+        <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">Live Competitor Comparison</h2>
+        <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:16px;">
+          Live overview of all cars on track, comparing tyre age, pace loss, and pit recommendations.
+        </p>
+
+        <div class="glass-panel" style="overflow-x:auto;">
+          <table class="attribution-table" style="width: 100%; text-align: left;">
+            <thead>
+              <tr>
+                <th>POS</th>
+                <th>CAR</th>
+                <th>COMPOUND</th>
+                <th>TYRE AGE</th>
+                <th>PACE LOSS (Est)</th>
+                <th>AI RECOMMENDATION</th>
+                <th>UNDERCUT / OVERTAKE</th>
+              </tr>
+            </thead>
+            <tbody id="competitors-table-body">
+              <tr>
+                <td colspan="7" style="text-align:center; padding: 20px; color: var(--text-muted);">
+                  Waiting for simulation to start...
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </main>

@@ -112,10 +112,9 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
+  flex: 0 0 auto;
   padding: var(--space-md);
   gap: var(--space-md);
-  overflow: hidden;
 }
 
 /* HEADER */
@@ -218,7 +217,15 @@
 
 .rc-telemetry { width: 320px; overflow-y: auto; }
 .rc-track { flex: 1; padding: 0; background: radial-gradient(ellipse at center, rgba(0, 229, 255, 0.03) 0%, transparent 70%); }
-.rc-events { width: 320px; }
+.rc-events { width: 320px; display: flex; flex-direction: column; min-height: 0; }
+
+.event-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: 380px;
+  padding-right: 4px;
+}
 
 .telem-grid {
   display: grid;

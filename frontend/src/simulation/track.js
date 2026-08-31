@@ -1,25 +1,25 @@
-import * as THREE from 'three';
-import { buildTrackFromGPS } from './TrackBuilder.js';
+// track.js - SVG Based 2D Track Renderer (Fashionable Edition)
 
-let scene, camera, renderer;
-let trackCurve = null;
-let pitCurve = null;
+let svgTrackPath = null;
+let svgPitPath = null;
+let trackLength = 0;
+let pitLength = 0;
+let carElements = new Map();
+let svgContainer = null;
 let currentPitLane = null;
 const boxTargets = new Map();
-let carMeshes = new Map(); // id -> THREE.Group
-let animationFrameId = null;
 
 const CAR_COLORS = {
-  'Red Bull': 0x0600ef,
-  'Mercedes': 0x00d2be,
-  'Ferrari': 0xdc0000,
-  'McLaren': 0xff8700,
-  'Aston Martin': 0x006f62,
-  'Alpine': 0x0090ff,
-  'Williams': 0x005aff,
-  'RB': 0x6692ff,
-  'Sauber': 0x00e701,
-  'Haas': 0xffffff
+  'Red Bull': '#0600ef',
+  'Mercedes': '#00d2be',
+  'Ferrari': '#dc0000',
+  'McLaren': '#ff8700',
+  'Aston Martin': '#006f62',
+  'Alpine': '#0090ff',
+  'Williams': '#005aff',
+  'RB': '#6692ff',
+  'Sauber': '#00e701',
+  'Haas': '#ffffff'
 };
 
 export function getPitLaneConfig() {
@@ -30,95 +30,136 @@ export function getPitBoxTarget(teamName) {
   return boxTargets.has(teamName) ? boxTargets.get(teamName) : 0.5;
 }
 
-// Helper to convert SVG path string to an array of 2D points
-function samplePathToPoints(pathD, numPoints = 200) {
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNS, 'svg');
-  const path = document.createElementNS(svgNS, 'path');
-  path.setAttribute('d', pathD);
-  svg.appendChild(path);
-  document.body.appendChild(svg); // Must be in DOM to get length
-
-  const length = path.getTotalLength();
-  const points = [];
-  for (let i = 0; i < numPoints; i++) {
-    const pt = path.getPointAtLength((i / numPoints) * length);
-    points.push({ x: pt.x, y: pt.y });
-  }
-
-  document.body.removeChild(svg);
-  return points;
-}
-
 export function initTrack(containerEl, trackPathD = null, pitLaneConfig = null) {
-  // Clean up previous
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
   containerEl.innerHTML = '';
-  carMeshes.clear();
+  carElements.clear();
   boxTargets.clear();
-
-  const width = containerEl.clientWidth || 800;
-  const height = containerEl.clientHeight || 600;
-
-  // 1. Setup Three.js Scene
-  scene = new THREE.Scene();
-  // scene.background = new THREE.Color(0x1a1a1a); // Transparent background
   
-  // Lighting
-  const ambient = new THREE.AmbientLight(0xffffff, 1.5);
-  scene.add(ambient);
-  const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-  dirLight.position.set(10, 10, 20);
-  scene.add(dirLight);
+  svgContainer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svgContainer.setAttribute('viewBox', '0 0 800 600');
+  svgContainer.style.width = '100%';
+  svgContainer.style.height = '100%';
+  svgContainer.style.overflow = 'visible';
+  
+  // Define Filters and Gradients
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  
+  // Track Glow Filter
+  const glowFilter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+  glowFilter.setAttribute('id', 'neonGlow');
+  glowFilter.setAttribute('x', '-20%');
+  glowFilter.setAttribute('y', '-20%');
+  glowFilter.setAttribute('width', '140%');
+  glowFilter.setAttribute('height', '140%');
+  glowFilter.innerHTML = `
+    <feGaussianBlur stdDeviation="8" result="blur" />
+    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+  `;
+  defs.appendChild(glowFilter);
 
-  // Camera (Isometric angle)
-  const aspect = width / height;
-  const d = 10; // Reduced from 15 to make track look bigger
-  camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
-  camera.position.set(0, -20, 20);
-  camera.lookAt(0, 0, 0);
+  // Car Shadow Filter
+  const shadowFilter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+  shadowFilter.setAttribute('id', 'carShadow');
+  shadowFilter.innerHTML = `
+    <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.8" />
+  `;
+  defs.appendChild(shadowFilter);
 
-  // Renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setClearColor(0x000000, 0); // fully transparent
-  renderer.setSize(width, height);
-  renderer.setPixelRatio(window.devicePixelRatio);
-  containerEl.appendChild(renderer.domElement);
+  // Track Surface Gradient
+  const trackGrad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+  trackGrad.setAttribute('id', 'trackGrad');
+  trackGrad.setAttribute('x1', '0%');
+  trackGrad.setAttribute('y1', '0%');
+  trackGrad.setAttribute('x2', '100%');
+  trackGrad.setAttribute('y2', '100%');
+  trackGrad.innerHTML = `
+    <stop offset="0%" stop-color="#2a2d34" />
+    <stop offset="100%" stop-color="#181a20" />
+  `;
+  defs.appendChild(trackGrad);
+  
+  svgContainer.appendChild(defs);
+  
+  const defaultPath = 'M 400,80 C 550,80 650,120 680,200 C 710,280 720,350 700,420 C 680,490 620,530 550,540 C 480,550 420,555 350,540 C 280,525 200,500 150,440 C 100,380 80,300 100,220 C 120,140 200,80 300,75 C 340,73 370,77 400,80 Z';
+  const tPath = trackPathD || defaultPath;
+  
+  // Track Base (Glow / Outline)
+  const trackBase = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  trackBase.setAttribute('d', tPath);
+  trackBase.setAttribute('fill', 'none');
+  trackBase.setAttribute('stroke', 'rgba(0, 229, 255, 0.15)'); // Cyan subtle glow
+  trackBase.setAttribute('stroke-width', '34');
+  trackBase.setAttribute('filter', 'url(#neonGlow)');
+  svgContainer.appendChild(trackBase);
+  
+  // Track Surface
+  svgTrackPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  svgTrackPath.setAttribute('d', tPath);
+  svgTrackPath.setAttribute('fill', 'none');
+  svgTrackPath.setAttribute('stroke', 'url(#trackGrad)');
+  svgTrackPath.setAttribute('stroke-width', '28');
+  svgContainer.appendChild(svgTrackPath);
 
-  // Default path if none provided
-  const tPath = trackPathD || 'M 400,80 C 550,80 650,120 680,200 C 710,280 720,350 700,420 C 680,490 620,530 550,540 C 480,550 420,555 350,540 C 280,525 200,500 150,440 C 100,380 80,300 100,220 C 120,140 200,80 300,75 C 340,73 370,77 400,80 Z';
+  // Track Inner Racing Line (Dashed)
+  const racingLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  racingLine.setAttribute('d', tPath);
+  racingLine.setAttribute('fill', 'none');
+  racingLine.setAttribute('stroke', 'rgba(255, 255, 255, 0.08)');
+  racingLine.setAttribute('stroke-width', '2');
+  racingLine.setAttribute('stroke-dasharray', '12, 12');
+  svgContainer.appendChild(racingLine);
+  
+  // Start/Finish Line Checkerboard Effect (Simulated with dashes)
+  const sfLine1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  sfLine1.setAttribute('x1', '400');
+  sfLine1.setAttribute('y1', '66');
+  sfLine1.setAttribute('x2', '400');
+  sfLine1.setAttribute('y2', '94');
+  sfLine1.setAttribute('stroke', '#fff');
+  sfLine1.setAttribute('stroke-width', '4');
+  sfLine1.setAttribute('stroke-dasharray', '4, 4');
+  svgContainer.appendChild(sfLine1);
 
-  // 2. Generate Track GPS Points
-  const rawGPSPoints = samplePathToPoints(tPath, 400);
-
-  // 3. Build 3D Track
-  // Note: circuitId can be passed in later, for now we pass null
-  const buildResult = buildTrackFromGPS(rawGPSPoints, null);
-  if (buildResult && buildResult.group) {
-    scene.add(buildResult.group);
-    trackCurve = buildResult.curve;
-  }
-
-  // 4. Setup Pit Lane
+  const sfLine2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  sfLine2.setAttribute('x1', '404');
+  sfLine2.setAttribute('y1', '66');
+  sfLine2.setAttribute('x2', '404');
+  sfLine2.setAttribute('y2', '94');
+  sfLine2.setAttribute('stroke', '#fff');
+  sfLine2.setAttribute('stroke-width', '4');
+  sfLine2.setAttribute('stroke-dasharray', '4, 4');
+  sfLine2.setAttribute('stroke-dashoffset', '4'); // Offset checkerboard
+  svgContainer.appendChild(sfLine2);
+  
   currentPitLane = pitLaneConfig;
-  pitCurve = null;
+  svgPitPath = null;
+  
   if (currentPitLane && currentPitLane.centerline) {
-    const pitPoints = samplePathToPoints(currentPitLane.centerline, 100);
-    if (buildResult.center && buildResult.scale) {
-       const pts3D = pitPoints.map(p => new THREE.Vector3(
-         (p.x - buildResult.center.x) * buildResult.scale,
-         -(p.y - buildResult.center.y) * buildResult.scale, // INVERTED Y TO MATCH TRACK BUILDER
-         0.05 // slightly above ground
-       ));
-       pitCurve = new THREE.CatmullRomCurve3(pts3D, false, "catmullrom", 0.3);
+    // Pit lane glow
+    const pitGlow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pitGlow.setAttribute('d', currentPitLane.centerline);
+    pitGlow.setAttribute('fill', 'none');
+    pitGlow.setAttribute('stroke', 'rgba(255, 170, 0, 0.3)');
+    pitGlow.setAttribute('stroke-width', '14');
+    pitGlow.setAttribute('filter', 'url(#neonGlow)');
+    svgContainer.appendChild(pitGlow);
 
-       // Draw a simple line for pit lane
-       const geom = new THREE.BufferGeometry().setFromPoints(pitCurve.getSpacedPoints(100));
-       const mat = new THREE.LineDashedMaterial({ color: 0xffaa00, dashSize: 0.5, gapSize: 0.5 });
-       const line = new THREE.Line(geom, mat);
-       line.computeLineDistances();
-       scene.add(line);
-    }
+    // Pit lane surface
+    svgPitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    svgPitPath.setAttribute('d', currentPitLane.centerline);
+    svgPitPath.setAttribute('fill', 'none');
+    svgPitPath.setAttribute('stroke', '#222');
+    svgPitPath.setAttribute('stroke-width', '10');
+    svgContainer.appendChild(svgPitPath);
+
+    // Pit lane center line
+    const pitCenter = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pitCenter.setAttribute('d', currentPitLane.centerline);
+    pitCenter.setAttribute('fill', 'none');
+    pitCenter.setAttribute('stroke', '#ffaa00');
+    pitCenter.setAttribute('stroke-width', '2');
+    pitCenter.setAttribute('stroke-dasharray', '8, 8');
+    svgContainer.appendChild(pitCenter);
     
     if (currentPitLane.boxes) {
       currentPitLane.boxes.forEach((box) => {
@@ -126,151 +167,173 @@ export function initTrack(containerEl, trackPathD = null, pitLaneConfig = null) 
       });
     }
   }
-
-  // Handle Resize
-  window.addEventListener('resize', onWindowResize);
-
-  function onWindowResize() {
-    if (!containerEl) return;
-    const w = containerEl.clientWidth;
-    const h = containerEl.clientHeight;
-    const aspect = w / h;
-    camera.left = -d * aspect;
-    camera.right = d * aspect;
-    camera.top = d;
-    camera.bottom = -d;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
+  
+  containerEl.appendChild(svgContainer);
+  
+  // Debug text
+  window.debugText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  window.debugText.setAttribute('x', '10');
+  window.debugText.setAttribute('y', '30');
+  window.debugText.setAttribute('fill', 'white');
+  window.debugText.setAttribute('font-size', '16px');
+  svgContainer.appendChild(window.debugText);
+  
+  // Get lengths
+  trackLength = svgTrackPath.getTotalLength();
+  if (svgPitPath) {
+    pitLength = svgPitPath.getTotalLength();
   }
-
-  // Animation Loop
-  function animate() {
-    animationFrameId = requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  // Return structure compatible with previous implementation
-  return { trackPath: null, trackLength: 1.0 }; 
+  
+  return { trackPath: tPath, trackLength: 1.0 };
 }
 
 export function syncCarsToSVG(cars, svgEl) {
-  // Rename function concept: syncCarsTo3D
   const carIds = new Set(cars.map(c => c.id));
   
-  // Remove cars that no longer exist
-  for (const [id, group] of carMeshes.entries()) {
+  // Remove dead cars
+  for (const [id, group] of carElements.entries()) {
     if (!carIds.has(id)) {
-      scene.remove(group);
-      carMeshes.delete(id);
+      if (group.parentNode) group.parentNode.removeChild(group);
+      carElements.delete(id);
     }
   }
-
+  
   // Add new cars
   cars.forEach(car => {
-    if (!carMeshes.has(car.id)) {
-      const group = new THREE.Group();
-
-      // Car body (small box)
-      const color = car.color || CAR_COLORS[car.team] || 0xffffff;
-      const geom = new THREE.BoxGeometry(1.2, 0.6, 0.4); // Made bigger
-      const mat = new THREE.MeshBasicMaterial({ color: color }); // Removed lighting dependency
-      const mesh = new THREE.Mesh(geom, mat);
-      mesh.position.z = 0.2;
-      group.add(mesh);
-
-      // Glow for user
+    if (!carElements.has(car.id)) {
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      
+      const color = car.color || CAR_COLORS[car.team] || '#ffffff';
+      
       if (car.isUser) {
-        const glowGeom = new THREE.CircleGeometry(1.2, 16);
-        const glowMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
-        const glow = new THREE.Mesh(glowGeom, glowMat);
-        glow.position.z = 0.05;
-        group.add(glow);
+        // User car halo
+        const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        halo.setAttribute('r', '18');
+        halo.setAttribute('fill', 'none');
+        halo.setAttribute('stroke', color);
+        halo.setAttribute('stroke-width', '2');
+        halo.setAttribute('opacity', '0.5');
+        halo.setAttribute('filter', 'url(#neonGlow)');
+        group.appendChild(halo);
       }
 
-      // Sprite Label
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = car.isUser ? '#ffffff' : color;
-      ctx.font = 'bold 36px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(car.isUser ? 'P' + car.position : car.number, 128, 48);
+      // Drop shadow wrapper for car
+      const shadowGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      shadowGroup.setAttribute('filter', 'url(#carShadow)');
       
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.needsUpdate = true; // Ensure it renders
-      const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
-      const sprite = new THREE.Sprite(spriteMat);
-      sprite.position.set(0, 0, 1.5); // Float directly above car in Z
-      sprite.scale.set(4, 1, 1); // Made bigger
+      let shape;
+      if (car.isUser) {
+        // Create an arrow/pointer for the user car
+        // A triangle pointing right: (0,-10), (16,0), (0,10)
+        shape = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        shape.setAttribute('points', '-6,-10 14,0 -6,10');
+        shape.setAttribute('fill', color);
+        shape.setAttribute('stroke', '#fff');
+        shape.setAttribute('stroke-width', '2');
+      } else {
+        shape = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        shape.setAttribute('r', '8');
+        shape.setAttribute('fill', color);
+        shape.setAttribute('stroke', 'rgba(255,255,255,0.2)');
+        shape.setAttribute('stroke-width', '1');
+      }
+      shadowGroup.appendChild(shape);
+      group.appendChild(shadowGroup);
       
-      sprite.userData.isLabel = true;
-      group.add(sprite);
-
-      scene.add(group);
-      carMeshes.set(car.id, group);
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('y', car.isUser ? '4' : '3');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('font-size', car.isUser ? '11px' : '9px');
+      text.setAttribute('font-weight', '900');
+      text.setAttribute('font-family', 'var(--font-mono, monospace)');
+      text.setAttribute('fill', car.isUser ? '#000' : '#fff');
+      text.textContent = car.isUser ? 'P' + car.position : car.number;
+      text.classList.add('car-label');
+      group.appendChild(text);
+      
+      svgContainer.appendChild(group);
+      carElements.set(car.id, group);
     } else {
-       // Update label text if needed
-       const group = carMeshes.get(car.id);
-       group.children.forEach(c => {
-         if (c.userData.isLabel && car.isUser) {
-           const ctx = c.material.map.image.getContext('2d');
-           ctx.clearRect(0,0,256,64);
-           ctx.fillStyle = '#ffffff';
-           ctx.fillText('P' + car.position, 128, 48);
-           c.material.map.needsUpdate = true;
-         }
-       });
+      // Update label
+      const group = carElements.get(car.id);
+      if (car.isUser) {
+        const text = group.querySelector('.car-label');
+        if (text) text.textContent = 'P' + car.position;
+      }
     }
   });
 }
 
-export function renderCars(cars) { if (Math.random() < 0.01) console.log('renderCars cars:', cars.length, 'meshes:', carMeshes.size);
-  if (!trackCurve) return;
-
+export function renderCars(cars) {
+  if (!svgTrackPath) return;
+  
+  // Fallback in case getTotalLength returned 0 during initialization
+  if (!trackLength || trackLength === 0) {
+    trackLength = svgTrackPath.getTotalLength();
+  }
+  if (svgPitPath && (!pitLength || pitLength === 0)) {
+    pitLength = svgPitPath.getTotalLength();
+  }
+  
   cars.forEach(car => {
-    const group = carMeshes.get(car.id);
+    const group = carElements.get(car.id);
     if (!group) return;
-
-    let curve = trackCurve;
-    let t = ((car.progress % 1) + 1) % 1; // Safely handle negative progress
-
-    if (car.pitState && pitCurve) {
-      curve = pitCurve;
+    
+    let path = svgTrackPath;
+    let t = ((car.progress % 1) + 1) % 1;
+    let length = trackLength;
+    
+    if (car.pitState && svgPitPath) {
+      path = svgPitPath;
       t = Math.min(Math.max(car.pitProgress || 0, 0), 1);
+      length = pitLength;
     }
-
-    // Ensure t is strictly between 0 and 1
+    
     t = Math.max(0, Math.min(1, t));
-
-    const pt = curve.getPointAt(t);
-    let tangent = curve.getTangentAt(t);
-    if (tangent.lengthSq() < 0.000001) tangent = new THREE.Vector3(1,0,0);
-    else tangent.normalize();
     
-    const normal = new THREE.Vector3(-tangent.y, tangent.x, 0).normalize();
-
-    // Lane offset
+    const pt = path.getPointAtLength(t * length);
+    
+    // Lane offset (crude approximation for SVG)
+    let offsetX = 0;
+    let offsetY = 0;
     if (car.lane !== 0) {
-      // In 3D, lane width should be smaller than 6 (which was SVG pixels)
-      const laneWidth = 0.3; 
-      const offset = car.lane * laneWidth;
-      pt.x += normal.x * offset;
-      pt.y += normal.y * offset;
-    }
-
-    group.position.copy(pt);
-    
-    // Rotate to face tangent
-    const angle = Math.atan2(tangent.y, tangent.x);
-    group.rotation.z = angle;
-
-    // Counter-rotate the sprite label so it always faces camera
-    group.children.forEach(c => {
-      if (c.userData.isLabel) {
-        c.rotation.z = -angle;
+      // Get tangent to calculate normal
+      const pt2 = path.getPointAtLength(Math.min((t * length) + 1, length));
+      const dx = pt2.x - pt.x;
+      const dy = pt2.y - pt.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > 0) {
+        const nx = -dy / dist;
+        const ny = dx / dist;
+        offsetX = nx * car.lane * 5; // 5px per lane
+        offsetY = ny * car.lane * 5;
       }
-    });
+    }
+    
+    // Calculate rotation angle
+    let angle = 0;
+    const pt2 = path.getPointAtLength(Math.min((t * length) + 1, length));
+    const dx = pt2.x - pt.x;
+    const dy = pt2.y - pt.y;
+    if (dx !== 0 || dy !== 0) {
+      angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    }
+    
+    group.setAttribute('transform', `translate(${pt.x + offsetX}, ${pt.y + offsetY}) rotate(${angle})`);
+    
+    // Debug info
+    if (car.isUser && window.debugText) {
+      window.debugText.textContent = `t: ${t.toFixed(4)}, len: ${trackLength}, pt: (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)}), angle: ${angle.toFixed(1)}, dx/dy: ${dx.toFixed(1)}/${dy.toFixed(1)}`;
+    }
+    
+    // Counter-rotate the label text so it remains upright
+    const text = group.querySelector('.car-label');
+    if (text) {
+      text.setAttribute('transform', `rotate(${-angle})`);
+      // Adjust text position slightly if it's the user car since the pointer is not perfectly symmetrical around center
+      if (car.isUser) {
+        text.setAttribute('y', '3'); // Center vertically in the rotated space
+      }
+    }
   });
 }

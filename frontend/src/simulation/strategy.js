@@ -81,7 +81,7 @@ export function getCompoundConfidence(compound) {
  * Compute the predicted lap-time delta from tyre degradation.
  * Uses the fitted quadratic model: Δ = β₁ × age + β₂ × age²
  */
-export function getDegradationDelta(compound, tyreAge) {
+export function getDegradationDelta(compound, tyreAge, setup = null) {
   let delta = 0;
   if (!modelData?.compounds?.[compound]) {
     const rates = { SOFT: 0.12, MEDIUM: 0.07, HARD: 0.04 };
@@ -100,14 +100,23 @@ export function getDegradationDelta(compound, tyreAge) {
       }
     }
   }
-  return Math.max(0, delta) * weatherMultiplier;
+  
+  let setupMultiplier = 1.0;
+  if (setup) {
+    if (setup.downforceLevel === 'HIGH') setupMultiplier += 0.15; // high df = more wear
+    if (setup.downforceLevel === 'LOW') setupMultiplier -= 0.10;
+    if (setup.balance === 'FRONT') setupMultiplier += 0.05;
+    if (setup.balance === 'REAR') setupMultiplier -= 0.05;
+  }
+  
+  return Math.max(0, delta) * weatherMultiplier * setupMultiplier;
 }
 
 /**
  * Compute the marginal degradation rate at current tyre age.
  * This is the derivative: dΔ/d(age) = β₁ + 2β₂ × age
  */
-export function getMarginalDegRate(compound, tyreAge) {
+export function getMarginalDegRate(compound, tyreAge, setup = null) {
   let rate = 0;
   if (!modelData?.compounds?.[compound]) {
     const rates = { SOFT: 0.12, MEDIUM: 0.07, HARD: 0.04 };
@@ -125,14 +134,23 @@ export function getMarginalDegRate(compound, tyreAge) {
       rate = c.deg_linear + 2 * c.deg_quadratic * tyreAge;
     }
   }
-  return Math.max(0, rate) * weatherMultiplier;
+  
+  let setupMultiplier = 1.0;
+  if (setup) {
+    if (setup.downforceLevel === 'HIGH') setupMultiplier += 0.15;
+    if (setup.downforceLevel === 'LOW') setupMultiplier -= 0.10;
+    if (setup.balance === 'FRONT') setupMultiplier += 0.05;
+    if (setup.balance === 'REAR') setupMultiplier -= 0.05;
+  }
+  
+  return Math.max(0, rate) * weatherMultiplier * setupMultiplier;
 }
 
 /**
  * Find the optimal stop lap over the remaining race distance by exhaustive search.
  * Goal: minimize total time = (current tyre time) + pit_cost + (fresh tyre time)
  */
-export function optimal_stop_lap(currentCompound, currentTyreAge, currentRaceLap, freshCompound, currentFuelKg) {
+export function optimal_stop_lap(currentCompound, currentTyreAge, currentRaceLap, freshCompound, currentFuelKg, setup = null) {
   const totalLaps = getTotalLaps();
   const burnRate = getFuelBurnRate();
   const currentFuelLaps = currentFuelKg / burnRate;
@@ -164,7 +182,7 @@ export function optimal_stop_lap(currentCompound, currentTyreAge, currentRaceLap
 
     // Time lost on current tyre until candidate lap
     for (let i = 0; i < lapsOnCurrent; i++) {
-      totalDelta += getDegradationDelta(currentCompound, currentTyreAge + i);
+      totalDelta += getDegradationDelta(currentCompound, currentTyreAge + i, setup);
     }
 
     // Time lost if pitting
@@ -175,7 +193,7 @@ export function optimal_stop_lap(currentCompound, currentTyreAge, currentRaceLap
       
       // Time lost on fresh tyre to end of race
       for (let i = 1; i <= lapsOnFresh; i++) {
-        totalDelta += getDegradationDelta(freshCompound, i);
+        totalDelta += getDegradationDelta(freshCompound, i, setup);
       }
     }
 
@@ -198,7 +216,7 @@ export function optimal_stop_lap(currentCompound, currentTyreAge, currentRaceLap
  * 
  * Returns { works: boolean, net_gain_seconds: number }
  */
-export function evaluate_undercut(rivalCompound, rivalTyreAge, gapToRival, lapsRemaining, freshCompound) {
+export function evaluate_undercut(rivalCompound, rivalTyreAge, gapToRival, lapsRemaining, freshCompound, rivalSetup = null, ourSetup = null) {
   // If we pit now, rival pits next lap.
   // We lose pit time now, but gain on the out-lap vs their in-lap.
   // Assuming a standard refuel amount for a typical stint for approximation
@@ -206,13 +224,13 @@ export function evaluate_undercut(rivalCompound, rivalTyreAge, gapToRival, lapsR
   const pitCost = getEffectivePitCost(avgRefuel) + OUT_LAP_COLD_TYRE_PENALTY;
   
   // Rival time over next 2 laps (lap 1: old, lap 2: pit + fresh)
-  const rivalLap1 = getDegradationDelta(rivalCompound, rivalTyreAge);
-  const rivalLap2 = pitCost + getDegradationDelta(freshCompound, 1);
+  const rivalLap1 = getDegradationDelta(rivalCompound, rivalTyreAge, rivalSetup);
+  const rivalLap2 = pitCost + getDegradationDelta(freshCompound, 1, rivalSetup);
   const rivalTotal = rivalLap1 + rivalLap2;
   
   // Our time over next 2 laps (lap 1: pit + fresh, lap 2: fresh age 2)
-  const ourLap1 = pitCost + getDegradationDelta(freshCompound, 1);
-  const ourLap2 = getDegradationDelta(freshCompound, 2);
+  const ourLap1 = pitCost + getDegradationDelta(freshCompound, 1, ourSetup);
+  const ourLap2 = getDegradationDelta(freshCompound, 2, ourSetup);
   const ourTotal = ourLap1 + ourLap2;
   
   // Net gain in our favor vs rival over the pit sequence
@@ -225,7 +243,7 @@ export function evaluate_undercut(rivalCompound, rivalTyreAge, gapToRival, lapsR
 /**
  * Get pit recommendation state driven by actual strategy optimal lap and fuel.
  */
-export function getRecommendation(compound, tyreAge, currentLap, fuelPct) {
+export function getRecommendation(compound, tyreAge, currentLap, fuelPct, setup = null) {
   const cInfo = getCompoundConfidence(compound);
   
   // Fuel check
@@ -258,7 +276,7 @@ export function getRecommendation(compound, tyreAge, currentLap, fuelPct) {
   const nextCompound = (compound === 'HARD') ? 'MEDIUM' : 'HARD';
   
   const lapsRemaining = getTotalLaps() - currentLap;
-  const optimalLap = optimal_stop_lap(compound, tyreAge, currentLap, nextCompound, fuelKg);
+  const optimalLap = optimal_stop_lap(compound, tyreAge, currentLap, nextCompound, fuelKg, setup);
   const lapsUntilOptimal = optimalLap - currentLap;
   
   const fuelNeededIfPitNow = calculateOptimalRefuelAmount(lapsRemaining);
