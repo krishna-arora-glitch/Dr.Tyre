@@ -1,6 +1,39 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+build/
+
+# OS files
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+
+# Cache
+pipeline/cache/
+
+# Presentations & scripts
 *.pptx
 ~$*.pptx
 generate_ppt.py
+
+# Test images
+frontend/track_test*.png
+
+# Misc
+verify_data.py
+test_strategy.mjs
