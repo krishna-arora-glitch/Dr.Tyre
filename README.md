@@ -1,4 +1,4 @@
-﻿# Dr.Tyre — AI-Powered Tyre Strategy Intelligence
+# Dr.Tyre — AI-Powered Tyre Strategy Intelligence
 
 > **Team:** Shall We Develop | **Hackathon:** TrackShift
 
@@ -116,14 +116,6 @@ Open `http://localhost:5173` in your browser.
 
 ---
 
-## Known Limitations
-
-- **Fuel loads are estimated:** Real F1 fuel data is not public. We assume 55kg for practice, 110kg for race, with 1.77kg/lap burn rate.
-- **Traffic is inferred:** A 3-lap rolling median anomaly detector flags dirty-air laps (>1.5 sigma slower than rolling median).
-- **Track evolution is approximated:** Modeled as a logarithmic improvement over session time.
-
----
-
 ## Team
 
-**Shall We Develop** — Built for the TrackShift Hackathon 2024
+**Shall We Develop** — Built for the TrackShift Hackathon 2026
