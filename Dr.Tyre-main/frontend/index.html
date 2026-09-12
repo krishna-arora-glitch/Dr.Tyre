@@ -650,20 +650,19 @@
           </div>
 
           <!-- Right: Live Speed Trace & Lap History -->
-          <div style="flex: 1.5; display: flex; flex-direction: column; gap: var(--space-md);">
+          <div style="flex: 1.5; display: flex; flex-direction: column; gap: var(--space-md); height: 100%;">
 
-            
             <!-- LAP HISTORY -->
-            <div class="rc-panel rc-lap-history" style="flex: 1; display: flex; flex-direction: column; padding: 12px; min-height: 240px;">
-              <h3 style="margin:0 0 8px 0; font-size:0.8rem; color:var(--text-muted);">LAP HISTORY</h3>
-              <div class="lap-history-table-container" style="overflow-y: auto; flex: 1; min-height: 180px; max-height: 260px; padding-right: 4px;">
-                <table style="width: 100%; text-align: left; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.75rem;">
-                  <thead style="position: sticky; top: 0; background: var(--bg-glass); z-index: 2;">
-                    <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted);">
-                      <th style="padding: 4px;">LAP</th>
-                      <th style="padding: 4px;">POS</th>
-                      <th style="padding: 4px;">TYRE DEG</th>
-                      <th style="padding: 4px;">LAP TIME</th>
+            <div class="rc-panel rc-lap-history" style="flex: 1; display: flex; flex-direction: column; padding: 14px; min-height: 380px; height: 100%;">
+              <h3 style="margin: 0 0 10px 0; font-size: 0.85rem; font-weight: 900; letter-spacing: 1px; color: var(--color-carbon);">LAP HISTORY</h3>
+              <div class="lap-history-table-container" style="overflow-y: auto; flex: 1; min-height: 320px; height: 100%; padding-right: 4px;">
+                <table style="width: 100%; text-align: left; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.78rem;">
+                  <thead style="position: sticky; top: 0; background: #ffffff; z-index: 2; border-bottom: 2px solid #000;">
+                    <tr style="color: #000; font-weight: 800;">
+                      <th style="padding: 6px 8px;">LAP</th>
+                      <th style="padding: 6px 8px;">POS</th>
+                      <th style="padding: 6px 8px;">TYRE DEG</th>
+                      <th style="padding: 6px 8px;">LAP TIME</th>
                     </tr>
                   </thead>
                   <tbody id="lap-history-body">
