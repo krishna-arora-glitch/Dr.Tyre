@@ -9,7 +9,8 @@ import './style.css';
 import { initSimulation, destroySimulation, onSimulationUpdate, setRaceConfig, raceConfig } from './simulation/simulation.js';
 import { CIRCUITS } from './simulation/circuits.js';
 import { initAnalysis } from './analysis/analysis.js';
-import { initSubNav, initTyreIntelligence, initGhostBaseline,
+import {
+  initSubNav, initTyreIntelligence, initGhostBaseline,
   initCompare, initInvestigate, initValidation,
   initProvenance, initReport, updateResearchWithSimulationState
 } from './research/research.js';
@@ -56,7 +57,7 @@ function resolveActivePrior(data) {
   if (!data?.sensitivity_grid) return;
   const grid = data.sensitivity_grid[activePrior];
   if (!grid) return;
-  
+
   // If grid.compounds is empty (telemetry_stress had no fits), build from models.baseline
   let compounds = grid.compounds;
   if (!compounds || Object.keys(compounds).length === 0) {
@@ -75,7 +76,7 @@ function resolveActivePrior(data) {
           max_age_fitted: model.max_age_fitted,
           n_laps: model.n_laps,
           fresh_pace: model.fresh_pace,
-          color: model.color || {'SOFT': '#ff3333', 'MEDIUM': '#ffd700', 'HARD': '#000000'}[comp] || '#000000',
+          color: model.color || { 'SOFT': '#ff3333', 'MEDIUM': '#ffd700', 'HARD': '#000000' }[comp] || '#000000',
           curve_ages: model.curve_ages,
           curve_deltas: model.curve_deltas,
           curve_predicted: model.curve_predicted,
@@ -85,7 +86,7 @@ function resolveActivePrior(data) {
       }
     }
   }
-  
+
   data.compounds = compounds;
   data.charts = grid.charts;
   data.track_evolution = grid.track_evolution;
@@ -113,7 +114,7 @@ function handlePriorChange(newPrior) {
 
   // Update competitors page
   initCompetitorsPage(modelData);
-  
+
   // Re-render story mode with new data
   storyInitialized = false;
   initStoryMode(modelData);
@@ -133,7 +134,7 @@ async function loadModelData(trackId = 'singapore') {
   try {
     statusEl.classList.remove('ready', 'error');
     statusText.textContent = 'LOADING...';
-    
+
     const response = await fetch(`/model_output_${trackId.toLowerCase()}.json?t=` + Date.now());
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     modelData = await response.json();
@@ -143,7 +144,7 @@ async function loadModelData(trackId = 'singapore') {
     if (modelData.race_info?.name) {
       badge.textContent = modelData.race_info.name.toUpperCase();
     }
-    
+
     // Update timestamp
     const timestamp = document.getElementById('last-run-time');
     if (modelData.metadata?.last_run_timestamp) {
@@ -269,10 +270,10 @@ function initRcChartsNav() {
   if (!container) return;
   const navContainer = container.querySelector('.research-sub-nav');
   if (!navContainer) return;
-  
+
   const btns = navContainer.querySelectorAll('.sub-nav-btn');
   const panels = container.querySelectorAll(':scope > .sub-panel');
-  
+
   btns.forEach(btn => {
     btn.addEventListener('click', () => {
       btns.forEach(b => b.classList.remove('active'));
@@ -288,12 +289,12 @@ function initRcChartsNav() {
 function initCarFilters(data) {
   const bar = document.getElementById('car-filter-bar');
   if (!bar) return;
-  
+
   // Clear except the label
   const label = bar.querySelector('span');
   bar.innerHTML = '';
   if (label) bar.appendChild(label);
-  
+
   // Extract cars from grid if available
   const cars = data?.session?.drivers || []; // fallback
   // Actually we need the 20 cars from the simulation grid. 
@@ -303,14 +304,14 @@ function initCarFilters(data) {
 export function populateCarFilters(simState) {
   const bar = document.getElementById('car-filter-bar');
   if (!bar || bar.dataset.populated === 'true') return;
-  
+
   simState.cars.forEach(car => {
     // Only the user's car is active by default
     const isActive = car.isUser;
     if (isActive) {
       activeCarFilters.add(car.number);
     }
-    
+
     const btn = document.createElement('button');
     btn.className = isActive ? 'car-filter-btn active' : 'car-filter-btn';
     btn.innerHTML = `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${car.color}; border:1px solid #000; margin-right:5px; vertical-align:middle;"></span>${car.number}`;
@@ -322,7 +323,7 @@ export function populateCarFilters(simState) {
     btn.style.color = '#000000';
     btn.style.border = isActive ? '2px solid #000000' : '1px solid rgba(0, 0, 0, 0.3)';
     btn.style.backgroundColor = isActive ? '#e2e8f0' : '#ffffff';
-    
+
     btn.addEventListener('click', () => {
       if (activeCarFilters.has(car.number)) {
         activeCarFilters.delete(car.number);
@@ -337,15 +338,15 @@ export function populateCarFilters(simState) {
         btn.style.border = '2px solid #000000';
         btn.style.color = '#000000';
       }
-      
+
       const currentState = getSimulationState();
       updateLapChart(currentState);
       updateExtraCharts(currentState);
     });
-    
+
     bar.appendChild(btn);
   });
-  
+
   bar.dataset.populated = 'true';
 }
 
@@ -433,15 +434,15 @@ let selectedCondition = 'DRY';
 function initTrackSelection() {
   const grid = document.getElementById('circuit-grid');
   if (!grid) return;
-  
+
   grid.innerHTML = '';
-  
+
   // Render cards
   Object.values(CIRCUITS).forEach(circuit => {
     const card = document.createElement('div');
     card.className = 'track-card';
     card.dataset.id = circuit.id;
-    
+
     card.innerHTML = `
       <div class="track-card-preview">
         <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
@@ -467,11 +468,11 @@ function initTrackSelection() {
         </div>
       </div>
     `;
-    
+
     card.addEventListener('click', () => selectTrack(circuit.id));
     grid.appendChild(card);
   });
-  
+
   // Condition buttons
   const condBtns = document.querySelectorAll('.cond-btn');
   condBtns.forEach(btn => {
@@ -481,27 +482,27 @@ function initTrackSelection() {
       selectedCondition = e.target.dataset.cond;
     });
   });
-  
+
   // Confirm button
   document.getElementById('btn-confirm-track').addEventListener('click', async () => {
     if (!selectedTrackId) return;
-    
+
     // Set global config
     setRaceConfig(selectedTrackId, selectedCondition);
-    
+
     // Load model data for this track dynamically
     modelData = await loadModelData(selectedTrackId);
-    
+
     // Update pre-race setup UI in simulation tab
     const c = CIRCUITS[selectedTrackId];
     document.getElementById('pre-race-circuit').textContent = c.name.toUpperCase();
     document.getElementById('pre-race-laps').textContent = c.raceLaps + ' LAPS';
     document.getElementById('pre-race-condition').textContent = selectedCondition;
-    
+
     // Update global header badge
     const badge = document.getElementById('race-badge');
     if (badge) badge.textContent = `2024 ${c.name.toUpperCase()} GP`;
-    
+
     // Switch to setup tab
     document.getElementById('tab-car-setup').click();
   });
@@ -509,25 +510,25 @@ function initTrackSelection() {
 
 function selectTrack(id) {
   selectedTrackId = id;
-  
+
   // Update UI active states
   document.querySelectorAll('.track-card').forEach(card => {
     if (card.dataset.id === id) card.classList.add('active');
     else card.classList.remove('active');
   });
-  
+
   // Update config panel
   const c = CIRCUITS[id];
   document.getElementById('ts-selected-name').textContent = c.name.toUpperCase();
   document.getElementById('ts-selected-desc').textContent = c.fullName;
-  
+
   const statusEl = document.getElementById('ts-model-status');
   if (c.hasRealModel) {
     statusEl.innerHTML = '<span style="color:var(--green)">REAL FASTF1 CALIBRATION</span>';
   } else {
     statusEl.innerHTML = '<span style="color:var(--amber)">SIMULATION TRANSFER</span>';
   }
-  
+
   document.getElementById('btn-confirm-track').disabled = false;
 }
 
@@ -535,7 +536,7 @@ function selectTrack(id) {
 async function bootstrap() {
   initTabs();
   initTrackSelection();
-  
+
   // Pre-select default track (singapore) and preload modelData immediately
   selectTrack('singapore');
   loadModelData('singapore').then(data => {
@@ -547,7 +548,7 @@ async function bootstrap() {
       initExtraCharts();
     }
   });
-  
+
   // Force Track Setup as the landing page
   document.getElementById('tab-track-select').click();
 
@@ -559,7 +560,7 @@ async function bootstrap() {
     }
     updateLapChart(simState);
     updateExtraCharts(simState);
-    
+
     // #7: Update race progress bar
     const timeline = document.getElementById('rc-timeline');
     if (timeline && simState.totalLaps) {

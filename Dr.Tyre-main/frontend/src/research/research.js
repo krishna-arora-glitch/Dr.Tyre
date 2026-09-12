@@ -86,7 +86,7 @@ export function updateResearchWithSimulationState(simState, modelData) {
       slider.disabled = true;
       slider.style.opacity = '0.5';
       slider.style.cursor = 'not-allowed';
-      
+
       // Update label to show Parc Fermé
       const titleEl = panel.querySelector('.fuel-prior-title h3');
       if (titleEl && !titleEl.textContent.includes('PARC FERMÉ')) {
@@ -96,7 +96,7 @@ export function updateResearchWithSimulationState(simState, modelData) {
       slider.disabled = false;
       slider.style.opacity = '1';
       slider.style.cursor = 'pointer';
-      
+
       const titleEl = panel.querySelector('.fuel-prior-title h3');
       if (titleEl) {
         titleEl.textContent = 'FUEL ASSUMPTION';
@@ -113,7 +113,7 @@ export function updateResearchWithSimulationState(simState, modelData) {
       document.getElementById('live-ghost-tyre').textContent = u.compound;
       document.getElementById('live-ghost-age').textContent = u.tyreAge;
       document.getElementById('live-ghost-loss').textContent = `+${tyreLoss}s`;
-      
+
       const c = CIRCUITS[raceConfig.trackId];
       if (c) {
         let bannerTitle = ghostBanner.querySelector('div');
@@ -133,7 +133,7 @@ export function updateResearchWithSimulationState(simState, modelData) {
       document.getElementById('live-intel-tyre').textContent = u.compound;
       document.getElementById('live-intel-age').textContent = u.tyreAge;
       document.getElementById('live-intel-fuel').textContent = `${u.fuelPct.toFixed(1)}%`;
-      
+
       const c = CIRCUITS[raceConfig.trackId];
       if (c) {
         let bannerTitle = intelBanner.querySelector('div');
@@ -149,7 +149,7 @@ export function updateResearchWithSimulationState(simState, modelData) {
   if (invBanner) {
     if (simState.active || simState.lap > 1) {
       invBanner.classList.remove('hidden');
-      
+
       let statusStr = simState.raceEvent === 'GREEN' ? 'GREEN FLAG' : simState.raceEvent;
       if (simState.lap > simState.totalLaps) statusStr = 'RACE FINISHED';
 
@@ -159,7 +159,7 @@ export function updateResearchWithSimulationState(simState, modelData) {
       // Since strategy.js is internal to simulation, we just state what we know:
       let recStr = u.isPitting ? 'PITTING' : (u.tyreAge > 20 ? 'CONSIDER PIT' : 'STAY OUT');
       if (simState.raceEvent !== 'GREEN') recStr = 'PIT NOW (SC/VSC)';
-      
+
       document.getElementById('live-inv-rec').textContent = recStr;
 
       const c = CIRCUITS[raceConfig.trackId];
@@ -203,7 +203,7 @@ export function initTyreIntelligence(data) {
 
   // Build compound cards
   let html = '';
-  
+
   const order = ['MEDIUM', 'HARD', 'SOFT'];
   const compoundColors = { SOFT: '#ff3333', MEDIUM: '#ffd700', HARD: '#000000' };
 
@@ -282,8 +282,8 @@ export function initGhostBaseline(data) {
   if (showMathBtn && mathPanel) {
     showMathBtn.addEventListener('click', () => {
       mathPanel.classList.toggle('active');
-      showMathBtn.textContent = mathPanel.classList.contains('active') 
-        ? '▼ Hide mathematical details' 
+      showMathBtn.textContent = mathPanel.classList.contains('active')
+        ? '▼ Hide mathematical details'
         : '▶ Show mathematical details';
     });
 
@@ -559,7 +559,7 @@ export async function initValidation(data) {
     // Determine active prior, fallback to 0.05
     const activePrior = window.activePrior || '0.05';
     const sundayPriorData = validationData.validation_grid[activePrior];
-    
+
     // Friday Prediction Data
     const fridayMed = data.compounds.MEDIUM;
     const maxAge = Math.max(...sundayPriorData.ages);
@@ -570,11 +570,11 @@ export async function initValidation(data) {
       const loss = fridayMed.deg_linear * age + fridayMed.deg_quadratic * Math.pow(age, 2);
       fridayPaceLoss.push(loss);
     }
-    
+
     // Sunday Actual Data
     const sundayAges = sundayPriorData.ages;
     const sundayPaceLoss = sundayPriorData.actual_pace_loss;
-    
+
     // Compute RMSE of Pace Loss
     let sumSqErr = 0;
     let validPts = 0;
@@ -634,7 +634,7 @@ export async function initValidation(data) {
           legend: { labels: { color: 'rgba(0,0,0,0.7)' } }
         },
         scales: {
-          x: { 
+          x: {
             type: 'linear',
             border: { display: true, color: '#000000', width: 2 },
             title: { display: true, text: 'Tyre Age (Laps)', color: '#000000' },
