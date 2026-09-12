@@ -217,8 +217,13 @@ function initTabs() {
           initLapChart();
           initExtraCharts();
         }
-      } else if (targetTab === 'competitors' && modelData) {
-        initCompetitorsPage(modelData);
+      } else if (targetTab === 'competitors') {
+        if (!modelData) {
+          modelData = await loadModelData(selectedTrackId || 'singapore');
+        }
+        if (modelData) {
+          initCompetitorsPage(modelData);
+        }
       } else if (targetTab === 'validation' && modelData) {
         initValidation(modelData);
         populateModelInfo(modelData);

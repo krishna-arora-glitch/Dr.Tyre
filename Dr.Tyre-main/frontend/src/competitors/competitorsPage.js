@@ -43,7 +43,7 @@ function updateCompetitorsTable(simState) {
     // Calculate Degradation Pace Loss
     const paceLoss = getDegradationDelta(car.compound, car.tyreAge, car.setup, car.thermalState);
     const uncertainty = getDegradationUncertainty(car.compound, car.tyreAge, car.setup);
-    const cliffLap = window.modelData?.compounds?.[car.compound]?.cliff_lap || 999;
+    const cliffLap = currentModelData?.compounds?.[car.compound]?.cliff_lap || window.modelData?.compounds?.[car.compound]?.cliff_lap || 999;
     const isCliff = car.tyreAge >= cliffLap;
     
     // Recommendation
@@ -89,6 +89,10 @@ function updateCompetitorsTable(simState) {
 
     const setupStr = car.setup ? `<div style="font-size:0.7em;color:var(--text-muted);">${car.setup.downforceLevel} DF / ${car.setup.balance} BAL</div>` : '';
 
+    const optLapDisplay = (!rec.optimalLap || rec.optimalLap === 'N/A') 
+      ? 'N/A' 
+      : (String(rec.optimalLap).toUpperCase().includes('FINISH') ? 'RACE FINISH' : (String(rec.optimalLap).startsWith('Lap') ? rec.optimalLap : `Lap ${rec.optimalLap}`));
+
     html += `
       <tr ${trStyle}>
         <td><strong style="${isUser ? 'color: var(--cyan);' : ''}">P${car.position}</strong></td>
@@ -99,7 +103,7 @@ function updateCompetitorsTable(simState) {
         <td><span class="data-label" style="background: ${getCompoundColor(car.compound)}20; color: ${getCompoundColor(car.compound)}; border-color: ${getCompoundColor(car.compound)}50;">${car.compound}</span></td>
         <td>${Math.max(1, car.tyreAge)}${isCliff ? ' ⚠️ (CLIFF)' : ''}</td>
         <td style="color: #ff5252;">+${paceLoss.toFixed(2)}s <span style="font-size:0.8em;color:var(--text-muted);">&plusmn;${uncertainty.toFixed(2)}</span></td>
-        <td ${recClass}>${rec.state} (${rec.optimalLap === 'N/A' || !rec.optimalLap ? 'N/A' : (String(rec.optimalLap).startsWith('Lap') ? rec.optimalLap : 'Lap ' + rec.optimalLap)})</td>
+        <td ${recClass}>${rec.state} (${optLapDisplay})</td>
         <td class="${battleClass}">${battleText}</td>
       </tr>
     `;

@@ -660,8 +660,12 @@ export function evaluatePitExitTraffic(currentRaceLap, lapsOnCurrent, currentFue
  */
 export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = null, allCars = null, thermalState = null, pitStops = 0) {
   const totalLaps = getTotalLaps();
-  const lapsRemaining = Math.max(0, totalLaps - currentLap);
-  const fuelKg = (fuelPct || 1.0) * 1.1; 
+  // Robust fuel normalization: handles both 0-100 percentage and 0.0-1.0 fraction
+  let normalizedFuelPct = (fuelPct !== undefined && fuelPct !== null) ? Number(fuelPct) : 100;
+  if (normalizedFuelPct > 0 && normalizedFuelPct <= 1.0) {
+    normalizedFuelPct *= 100;
+  }
+  const fuelKg = (normalizedFuelPct / 100) * 110; // Standard 110kg F1 fuel cell
   const burnRate = getFuelBurnRate(setup);
   const fuelLaps = fuelKg / burnRate;
   const cInfo = getCompoundConfidence(compound);
