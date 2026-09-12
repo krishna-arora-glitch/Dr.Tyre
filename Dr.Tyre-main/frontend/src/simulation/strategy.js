@@ -218,8 +218,8 @@ export function getDegradationDelta(compound, tyreAge, setup = null, thermalStat
   const thermalZ = deltaT > 0 ? (deltaT / 12.0) : 0.0;
   const simulationLapStress = getSimulationLapStress(setup, thermalZ, aeroInterference);
   
-  // StressFactor modifies BaseAgeDegradation (bounded by driver behaviour modifier, 0.97 - 1.10)
-  const boundedModifier = Math.max(0.97, Math.min(1.10, driverBehaviourModifier || 1.0));
+  // StressFactor modifies BaseAgeDegradation (bounded by driver behaviour modifier, 0.98 - 1.08)
+  const boundedModifier = Math.max(0.98, Math.min(1.08, driverBehaviourModifier || 1.0));
   const stressFactor = stressCoef * simulationLapStress * boundedModifier;
   
   // 2024 stress-adjusted baseline

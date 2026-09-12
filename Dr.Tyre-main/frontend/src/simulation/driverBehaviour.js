@@ -8,6 +8,13 @@
  * Strict Principle: Explanatory & bounded physical modifier — NEVER replaces core tyre models.
  */
 
+// ── Hard Safety Bounds ─────────────────────────────────────────────
+export const MIN_BEHAVIOUR_STRESS_MODIFIER = 0.98;
+export const MAX_BEHAVIOUR_STRESS_MODIFIER = 1.08;
+
+export const MIN_BEHAVIOUR_THERMAL_MODIFIER = 0.99;
+export const MAX_BEHAVIOUR_THERMAL_MODIFIER = 1.04;
+
 // ── Configuration Constants ───────────────────────────────────────
 export const DRIVER_BEHAVIOUR_CONFIG = {
   // Feature weights (must sum to 1.0)
@@ -29,22 +36,22 @@ export const DRIVER_BEHAVIOUR_CONFIG = {
     // OVERDRIVING > 80
   },
 
-  // Tyre mechanical stress modifiers per state (strictly bounded: 0.97 - 1.10)
+  // Practical mechanical stress modifiers per state (strictly bounded: 0.98 - 1.08)
   STRESS_MODIFIERS: {
-    CONSERVATIVE: 0.98,
-    DEFENSIVE: 0.99,
-    BALANCED: 1.00,
-    ATTACK: 1.035,
-    OVERDRIVING: 1.075,
+    CONSERVATIVE: 0.985, // 0.98 - 0.99
+    DEFENSIVE: 0.995,    // 0.99 - 1.00
+    BALANCED: 1.00,      // 1.00
+    ATTACK: 1.03,        // 1.02 - 1.04
+    OVERDRIVING: 1.065,  // 1.05 - 1.08
   },
 
-  // Thermal generation modifiers per state (strictly bounded: 0.98 - 1.06)
+  // Secondary thermal generation modifiers per state (strictly bounded: 0.99 - 1.04)
   THERMAL_MODIFIERS: {
-    CONSERVATIVE: 0.98,
-    DEFENSIVE: 0.99,
-    BALANCED: 1.00,
-    ATTACK: 1.03,
-    OVERDRIVING: 1.06,
+    CONSERVATIVE: 0.995, // 0.99 - 1.00
+    DEFENSIVE: 1.00,     // 1.00
+    BALANCED: 1.00,      // 1.00
+    ATTACK: 1.018,       // 1.01 - 1.025
+    OVERDRIVING: 1.032,  // 1.025 - 1.04
   },
 
   // Rolling buffer size (samples per window: ~100-150 samples represents 1-2 laps)
@@ -97,6 +104,12 @@ export function createDriverBehaviourState(driverProfile = null) {
     // Bounded Physical Modifiers
     tyreStressModifier: 1.00,
     thermalModifier: 1.00,
+    rawStressModifier: 1.00,
+    rawThermalModifier: 1.00,
+    confidenceFactor: 0.0,
+    stressEffectPct: 0.0,
+    thermalEffectPct: 0.0,
+    dominantFactors: ['Balanced inputs'],
 
     // Confidence
     confidence: 'LOW',
@@ -354,24 +367,89 @@ export function calculateDriverBehaviourConfidence(samplesCount, currentLap, rac
 }
 
 /**
- * Calculate bounded physical modifiers for tyre mechanical stress and thermal load.
+ * Extract the top dominant telemetry factors contributing to the behaviour score.
  */
-export function calculateDriverBehaviourModifiers(score, state) {
-  const C = DRIVER_BEHAVIOUR_CONFIG;
-  const baseStress = C.STRESS_MODIFIERS[state] || 1.00;
-  const baseThermal = C.THERMAL_MODIFIERS[state] || 1.00;
+export function getDominantFactors(features) {
+  const factors = [];
+  if (features.throttleAggression > 0.60) factors.push('Throttle aggression');
+  if (features.brakingAggression > 0.60) factors.push('Braking aggression');
+  if (features.cornerExitAggression > 0.60) factors.push('Corner exit aggression');
+  if (features.inputSharpness > 0.45) factors.push('Input sharpness');
+  if (features.throttleBrakeOverlap > 0.15) factors.push('Throttle/brake overlap');
+  if (features.inconsistency > 0.45) factors.push('Lap inconsistency');
 
-  // Continuous fine-grain blending within state envelope:
-  // Offset based on distance from neutral (50)
-  const continuousStressDelta = (score - 50.0) * 0.0010; // ±0.05 max
-  const continuousThermalDelta = (score - 50.0) * 0.0008; // ±0.04 max
+  if (factors.length === 0) {
+    if (features.throttleAggression < 0.40) factors.push('Throttle management');
+    if (features.brakingAggression < 0.40) factors.push('Smooth deceleration');
+    if (factors.length === 0) factors.push('Balanced inputs', 'Pace management');
+  }
+  return factors.slice(0, 3);
+}
 
-  const tyreStressModifier = clamp(baseStress + continuousStressDelta * 0.5, 0.97, 1.10);
-  const thermalModifier = clamp(baseThermal + continuousThermalDelta * 0.5, 0.98, 1.06);
+/**
+ * Calculate bounded physical modifiers for tyre mechanical stress and thermal load.
+ * 
+ * - Continuous smooth scaling without discrete jumps.
+ * - Attenuated by confidence: LOW confidence -> modifier approaches 1.0 (neutral).
+ * - Hard safety clamps: Stress [0.98, 1.08], Thermal [0.99, 1.04].
+ */
+export function calculateDriverBehaviourModifiers(score, state, confidence = null) {
+  // Continuous raw modifier calculation centered at score 50 (neutral 1.00)
+  // Continuous mechanical stress curve:
+  // score 0 -> 0.98, score 50 -> 1.00, score 75 -> 1.04, score 100 -> 1.08
+  let rawStressModifier;
+  if (score >= 50.0) {
+    rawStressModifier = 1.0 + (score - 50.0) * (0.08 / 50.0);
+  } else {
+    rawStressModifier = 1.0 - (50.0 - score) * (0.02 / 50.0);
+  }
+
+  // Continuous thermal modifier curve (much weaker secondary effect):
+  // score 0 -> 0.99, score 50 -> 1.00, score 75 -> 1.02, score 100 -> 1.04
+  let rawThermalModifier;
+  if (score >= 50.0) {
+    rawThermalModifier = 1.0 + (score - 50.0) * (0.04 / 50.0);
+  } else {
+    rawThermalModifier = 1.0 - (50.0 - score) * (0.01 / 50.0);
+  }
+
+  // Clamp raw modifiers to safety limits
+  rawStressModifier = clamp(rawStressModifier, MIN_BEHAVIOUR_STRESS_MODIFIER, MAX_BEHAVIOUR_STRESS_MODIFIER);
+  rawThermalModifier = clamp(rawThermalModifier, MIN_BEHAVIOUR_THERMAL_MODIFIER, MAX_BEHAVIOUR_THERMAL_MODIFIER);
+
+  // Confidence attenuation:
+  // LOW confidence -> minimal/neutral (~0.0 to 0.10)
+  // MEDIUM confidence -> partial (0.50)
+  // HIGH confidence -> full (1.00)
+  let confidenceFactor = 1.0;
+  if (confidence) {
+    if (confidence.level === 'LOW') {
+      confidenceFactor = clamp((confidence.score || 0.1) * 0.2, 0.0, 0.10);
+    } else if (confidence.level === 'MEDIUM') {
+      confidenceFactor = 0.50;
+    } else {
+      confidenceFactor = 1.00;
+    }
+  }
+
+  // Attenuated applied modifiers
+  const effectiveStress = 1.0 + confidenceFactor * (rawStressModifier - 1.0);
+  const effectiveThermal = 1.0 + confidenceFactor * (rawThermalModifier - 1.0);
+
+  const clampedStress = clamp(effectiveStress, MIN_BEHAVIOUR_STRESS_MODIFIER, MAX_BEHAVIOUR_STRESS_MODIFIER);
+  const clampedThermal = clamp(effectiveThermal, MIN_BEHAVIOUR_THERMAL_MODIFIER, MAX_BEHAVIOUR_THERMAL_MODIFIER);
+
+  const stressEffectPct = (clampedStress - 1.0) * 100.0;
+  const thermalEffectPct = (clampedThermal - 1.0) * 100.0;
 
   return {
-    tyreStressModifier: Math.round(tyreStressModifier * 1000) / 1000,
-    thermalModifier: Math.round(thermalModifier * 1000) / 1000,
+    tyreStressModifier: Math.round(clampedStress * 1000) / 1000,
+    thermalModifier: Math.round(clampedThermal * 1000) / 1000,
+    rawStressModifier: Math.round(rawStressModifier * 1000) / 1000,
+    rawThermalModifier: Math.round(rawThermalModifier * 1000) / 1000,
+    confidenceFactor: Math.round(confidenceFactor * 100) / 100,
+    stressEffectPct: Math.round(stressEffectPct * 10) / 10,
+    thermalEffectPct: Math.round(thermalEffectPct * 10) / 10,
   };
 }
 
@@ -381,22 +459,22 @@ export function calculateDriverBehaviourModifiers(score, state) {
 export function getDriverBehaviourExplanation(state, score, features) {
   switch (state) {
     case 'OVERDRIVING':
-      if (features.throttleBrakeOverlap > 0.12) {
-        return 'Overdriving pattern: excessive throttle/brake overlap and violent directional corrections.';
+      if (features.throttleBrakeOverlap > 0.15) {
+        return 'Overdriving pattern: excessive throttle/brake overlap and violent directional corrections increasing tyre stress.';
       }
-      return 'Overdriving detected: aggressive inputs combined with high throttle/brake variability.';
+      return 'Overdriving detected: recent aggressive inputs and high throttle/brake variability are accelerating tyre stress.';
 
     case 'ATTACK':
       if (features.cornerExitAggression > 0.65) {
         return 'Attack style: maximum throttle commitment and aggressive corner exits elevating tyre shear stress.';
       }
-      return 'Attack behaviour: high throttle application and late braking points over recent laps.';
+      return 'Recent throttle and braking patterns indicate an aggressive driving style, increasing tyre stress.';
 
     case 'DEFENSIVE':
-      return 'Defensive style: deep late braking into corner entries with protected throttle application on exit.';
+      return 'Defensive driving detected: late braking into corner entries with protected throttle application on exit.';
 
     case 'CONSERVATIVE':
-      return 'Conservative management: progressive throttle ramp-up and smooth braking protecting tyre carcass.';
+      return 'Conservative behaviour detected: reduced throttle application and smoother braking inputs protecting tyre carcass.';
 
     case 'BALANCED':
     default:
@@ -497,15 +575,21 @@ export function updateDriverBehaviour(car, dt = 0.05, raceEvent = 'GREEN') {
     }
   }
 
-  // 5. Calculate Bounded Stress & Thermal Modifiers
-  const modifiers = calculateDriverBehaviourModifiers(beh.score, beh.state);
-  beh.tyreStressModifier = modifiers.tyreStressModifier;
-  beh.thermalModifier = modifiers.thermalModifier;
-
-  // 6. Confidence Assessment
+  // 5. Confidence Assessment (evaluated before modifier calculation to govern attenuation)
   const conf = calculateDriverBehaviourConfidence(beh.samples.length, car.currentLap || 1, raceEvent, car.isPitting);
   beh.confidence = conf.level;
   beh.confidenceScore = conf.score;
+
+  // 6. Calculate Bounded Stress & Thermal Modifiers with Confidence Attenuation
+  const modifiers = calculateDriverBehaviourModifiers(beh.score, beh.state, conf);
+  beh.tyreStressModifier = modifiers.tyreStressModifier;
+  beh.thermalModifier = modifiers.thermalModifier;
+  beh.rawStressModifier = modifiers.rawStressModifier;
+  beh.rawThermalModifier = modifiers.rawThermalModifier;
+  beh.confidenceFactor = modifiers.confidenceFactor;
+  beh.stressEffectPct = modifiers.stressEffectPct;
+  beh.thermalEffectPct = modifiers.thermalEffectPct;
+  beh.dominantFactors = getDominantFactors(features);
 
   // 7. Dynamic Explanation
   beh.explanation = getDriverBehaviourExplanation(beh.state, beh.score, features);

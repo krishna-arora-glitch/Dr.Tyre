@@ -148,6 +148,8 @@ export function initSimulation(data, telData) {
   DOM.rcBehSmooth = document.getElementById('rc-beh-smooth');
   DOM.rcBehCons = document.getElementById('rc-beh-cons');
   DOM.rcBehExplanation = document.getElementById('rc-beh-explanation');
+  DOM.rcBehFactors = document.getElementById('rc-beh-factors');
+  DOM.rcBehEffect = document.getElementById('rc-beh-effect');
   
   // Engineer / Prescription Engine
   DOM.engCall = document.getElementById('eng-call');
@@ -1088,6 +1090,21 @@ function updateUI() {
     if (DOM.rcBehCons) {
       DOM.rcBehCons.textContent = beh.inconsistency < 0.35 ? 'HIGH' : (beh.inconsistency < 0.65 ? 'MED' : 'LOW');
       DOM.rcBehCons.style.color = beh.inconsistency < 0.35 ? 'var(--green)' : (beh.inconsistency < 0.65 ? 'var(--color-carbon)' : 'var(--amber)');
+    }
+    if (DOM.rcBehFactors) {
+      const factorsText = (beh.dominantFactors && beh.dominantFactors.length > 0) ? beh.dominantFactors.join(', ') : 'Balanced inputs';
+      DOM.rcBehFactors.textContent = factorsText;
+    }
+    if (DOM.rcBehEffect) {
+      const sign = (beh.stressEffectPct > 0) ? '+' : '';
+      DOM.rcBehEffect.textContent = `${sign}${(beh.stressEffectPct || 0).toFixed(1)}% tyre stress`;
+      if (beh.stressEffectPct > 1.5) {
+        DOM.rcBehEffect.style.color = 'var(--red, #dc2626)';
+      } else if (beh.stressEffectPct < -0.5) {
+        DOM.rcBehEffect.style.color = 'var(--green, #16a34a)';
+      } else {
+        DOM.rcBehEffect.style.color = 'var(--color-carbon, #000)';
+      }
     }
     if (DOM.rcBehExplanation) {
       DOM.rcBehExplanation.textContent = beh.explanation || 'Monitoring telemetry patterns...';
