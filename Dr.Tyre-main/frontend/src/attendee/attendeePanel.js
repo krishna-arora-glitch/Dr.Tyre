@@ -9,6 +9,7 @@
 import { onSimulationUpdate, getSimulationState, raceConfig } from '../simulation/simulation.js';
 import { getDegradationDelta, getRecommendation, COMPOUND_THERMAL_WINDOWS } from '../simulation/strategy.js';
 import { CIRCUITS } from '../simulation/circuits.js';
+import { computeTyreHealth } from '../simulation/tyreHealth.js';
 
 // ── State ──────────────────────────────────────────────────────────
 let initialized = false;
@@ -309,6 +310,37 @@ function rebuildCarCards(cars) {
         <div class="glass-panel attendee-stat-card" style="padding:12px;">
           <div class="attendee-stat-label">GEAR</div>
           <div id="attendee-gear-${index}" class="attendee-stat-value" style="font-size:1.4rem; color:var(--color-carbon);">—</div>
+        </div>
+      </div>
+
+      <!-- 5-Indicator Tyre Health & Puncture Risk Panel -->
+      <div class="glass-panel attendee-health-card" style="padding:14px 18px; border-left:5px solid var(--color-carbon);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:0.68rem; background:rgba(0,0,0,0.06); color:var(--color-carbon); padding:2px 8px; border-radius:4px; font-weight:800; border:1px solid rgba(0,0,0,0.15);">DIAGNOSTICS</span>
+            <span style="font-size:0.75rem; font-weight:900; color:var(--color-carbon); letter-spacing:0.5px;">TYRE HEALTH</span>
+          </div>
+          <span id="attendee-puncture-badge-${index}" style="font-size:0.68rem; font-weight:800; padding:2px 8px; border-radius:4px; border:1px solid #16a34a; background:rgba(22,163,74,0.12); color:#16a34a;">
+            8% LOW RISK
+          </span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px;">
+          <div>
+            <div style="font-size:0.65rem; color:var(--text-muted); margin-bottom:2px; font-weight:700;">GRIP LEVEL</div>
+            <div id="attendee-grip-${index}" style="font-size:1.15rem; font-weight:900; color:var(--green); font-family:var(--font-mono);">100%</div>
+          </div>
+          <div>
+            <div style="font-size:0.65rem; color:var(--text-muted); margin-bottom:2px; font-weight:700;">TREAD REMAINING</div>
+            <div id="attendee-tread-${index}" style="font-size:1.15rem; font-weight:900; color:var(--color-carbon); font-family:var(--font-mono);">100%</div>
+          </div>
+          <div>
+            <div style="font-size:0.65rem; color:var(--text-muted); margin-bottom:2px; font-weight:700;">DEG RATE</div>
+            <div id="attendee-deg-rate-${index}" style="font-size:0.95rem; font-weight:800; color:var(--color-carbon); font-family:var(--font-mono); margin-top:2px;">+0.050 s/L</div>
+          </div>
+          <div>
+            <div style="font-size:0.65rem; color:var(--text-muted); margin-bottom:2px; font-weight:700;">TYRE ENERGY</div>
+            <div id="attendee-tyre-energy-${index}" style="font-size:0.95rem; font-weight:900; color:var(--color-carbon); font-family:var(--font-mono); margin-top:2px;">30 LAPS</div>
+          </div>
         </div>
       </div>
 
@@ -627,6 +659,32 @@ function updateAttendeePanel(simState) {
     if (pitStopsEl) pitStopsEl.textContent = car.pitStops || 0;
     const gearEl = document.getElementById(`attendee-gear-${index}`);
     if (gearEl) gearEl.textContent = car.gear !== undefined ? car.gear : '—';
+
+    // ── 5-Indicator Tyre Health & Puncture Risk Engine (SELECTED ATTENDEE CAR) ──
+    const health = car.tyreHealth || computeTyreHealth(car, lastSimState?.modelData);
+    if (health) {
+      const gripEl = document.getElementById(`attendee-grip-${index}`);
+      if (gripEl) {
+        gripEl.textContent = `${health.gripLevel}%`;
+        gripEl.style.color = health.gripLevel > 70 ? 'var(--green)' : (health.gripLevel > 40 ? 'var(--amber)' : 'var(--red)');
+      }
+      const treadEl = document.getElementById(`attendee-tread-${index}`);
+      if (treadEl) {
+        treadEl.textContent = `${health.treadRemaining}%`;
+        treadEl.style.color = health.treadRemaining > 50 ? 'var(--color-carbon)' : (health.treadRemaining > 20 ? 'var(--amber)' : 'var(--red)');
+      }
+      const degRateEl = document.getElementById(`attendee-deg-rate-${index}`);
+      if (degRateEl) degRateEl.textContent = health.degRateFormatted;
+      const energyEl = document.getElementById(`attendee-tyre-energy-${index}`);
+      if (energyEl) energyEl.textContent = health.tyreEnergyText;
+      const punctBadge = document.getElementById(`attendee-puncture-badge-${index}`);
+      if (punctBadge) {
+        punctBadge.textContent = `${health.punctureRiskScore}% ${health.punctureRiskLevel} RISK`;
+        punctBadge.style.color = health.punctureRiskColor;
+        punctBadge.style.background = health.punctureRiskBg;
+        punctBadge.style.borderColor = health.punctureRiskColor;
+      }
+    }
 
     // Pit Strategy Recommendation
     const rec = getRecommendation(car.compound, car.tyreAge, simState.lap, car.fuelPct, car.setup, simState.cars, car.thermalState);

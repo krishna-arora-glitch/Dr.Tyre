@@ -19,6 +19,7 @@ import { raceSetup, lockSetup, unlockSetup } from '../setup/setup.js';
 import { initTelemetryUI, updateTelemetryUI } from './telemetry-ui.js';
 import { activePrior } from '../fuel-prior-state.js';
 import { buildTrackProfile, evaluateCarPhysics, getProfileAvgSpeed } from './trackDynamics.js';
+import { computeTyreHealth } from './tyreHealth.js';
 
 let modelData = null;
 let telemetryData = null;
@@ -112,6 +113,11 @@ export function initSimulation(data, telData) {
   DOM.rcFuelText = document.getElementById('rc-fuel-text');
   DOM.rcDelta = document.getElementById('rc-delta');
   DOM.rcDegRate = document.getElementById('rc-deg-rate');
+  DOM.rcHealthGrip = document.getElementById('rc-health-grip');
+  DOM.rcHealthTread = document.getElementById('rc-health-tread');
+  DOM.rcHealthDegRate = document.getElementById('rc-health-deg-rate');
+  DOM.rcHealthEnergy = document.getElementById('rc-health-energy');
+  DOM.rcPunctureBadge = document.getElementById('rc-puncture-badge');
   DOM.gapAheadCar = document.getElementById('gap-ahead-car');
   DOM.gapAheadTime = document.getElementById('gap-ahead-time');
   DOM.gapBehindCar = document.getElementById('gap-behind-car');
@@ -739,6 +745,9 @@ function simulationLoop(now) {
     car.prevBrake = car.brake;
     car.prevThrottle = car.throttle;
 
+    // ── 5-Indicator Tyre Health & Puncture Risk Engine (ALL 20 CARS) ──
+    car.tyreHealth = computeTyreHealth(car, modelData);
+
     if (isNaN(lapTime) || !isFinite(lapTime) || lapTime <= 10) lapTime = car.baseLapTime || 94.0;
     
     // ── Update Progress ──
@@ -954,8 +963,33 @@ function updateUI() {
   const setupVal = u.setupOffsetTotal || 0;
   const setupStr = setupVal !== 0 ? ` (Setup: ${setupVal > 0 ? '+' : ''}${setupVal.toFixed(1)}s)` : '';
   
-  DOM.rcDelta.textContent = `+${tyreDeg.toFixed(2)}s ±${tyreDegCI.toFixed(2)}s${setupStr}`;
-  DOM.rcDegRate.textContent = `${getMarginalDegRate(u.compound, u.tyreAge, u.setup).toFixed(2)}s/L`;
+  if (DOM.rcDelta) DOM.rcDelta.textContent = `+${tyreDeg.toFixed(2)}s ±${tyreDegCI.toFixed(2)}s${setupStr}`;
+  if (DOM.rcDegRate) DOM.rcDegRate.textContent = `${getMarginalDegRate(u.compound, u.tyreAge, u.setup).toFixed(2)}s/L`;
+
+  // ── 5-Indicator Tyre Health Panel & Puncture Risk Engine (MAIN CAR HUD) ──
+  const health = u.tyreHealth || computeTyreHealth(u, modelData);
+  if (health) {
+    if (DOM.rcHealthGrip) {
+      DOM.rcHealthGrip.textContent = `${health.gripLevel}%`;
+      DOM.rcHealthGrip.style.color = health.gripLevel > 70 ? 'var(--green)' : (health.gripLevel > 40 ? 'var(--amber)' : 'var(--red)');
+    }
+    if (DOM.rcHealthTread) {
+      DOM.rcHealthTread.textContent = `${health.treadRemaining}%`;
+      DOM.rcHealthTread.style.color = health.treadRemaining > 50 ? 'var(--color-carbon)' : (health.treadRemaining > 20 ? 'var(--amber)' : 'var(--red)');
+    }
+    if (DOM.rcHealthDegRate) {
+      DOM.rcHealthDegRate.textContent = health.degRateFormatted;
+    }
+    if (DOM.rcHealthEnergy) {
+      DOM.rcHealthEnergy.textContent = health.tyreEnergyText;
+    }
+    if (DOM.rcPunctureBadge) {
+      DOM.rcPunctureBadge.textContent = `${health.punctureRiskScore}% ${health.punctureRiskLevel}`;
+      DOM.rcPunctureBadge.style.color = health.punctureRiskColor;
+      DOM.rcPunctureBadge.style.background = health.punctureRiskBg;
+      DOM.rcPunctureBadge.style.borderColor = health.punctureRiskColor;
+    }
+  }
   
   const rcTyreTemp = document.getElementById('rc-tyre-temp');
   if (rcTyreTemp && u.tyreTemp) {
