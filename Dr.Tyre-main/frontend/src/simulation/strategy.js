@@ -7,6 +7,7 @@
 import { raceSetup } from '../setup/setup.js';
 import { raceConfig } from './simulation.js';
 import { CIRCUITS } from './circuits.js';
+import { calculateRegulationTransferFactor } from './regulationTransfer.js';
 
 // ── Strategy Constants ───────────────────────────────────────────
 export const PIT_LANE_LOSS = 24.0; // Seconds lost driving through pit lane at speed limit
@@ -218,9 +219,19 @@ export function getDegradationDelta(compound, tyreAge, setup = null, thermalStat
   // StressFactor modifies BaseAgeDegradation
   const stressFactor = stressCoef * simulationLapStress;
   
+  // 2024 stress-adjusted baseline
+  const stressAdjusted = baseAgeDeg * (1 + stressFactor);
+
+  // ── 2026 REGULATION TRANSFER LAYER ──
+  // Adjusts the 2024-trained LME baseline for the 2026 vehicle regulations.
+  // R_2026 = f(mass, tyre width, aero, traction, sliding)
+  // See regulationTransfer.js for full physics documentation.
+  const regResult = calculateRegulationTransferFactor(setup, simulationLapStress, aeroInterference, compound);
+  const regulated = stressAdjusted * regResult.factor;
+
   // Final Degradation Formula:
-  // Δt_deg = BaseAgeDegradation × (1 + StressFactor) + ThermalPenalty
-  let delta = baseAgeDeg * (1 + stressFactor) + thermalPenalty;
+  // Δt_deg = (BaseAgeDegradation × (1 + StressFactor) × R_2026) + ThermalPenalty
+  let delta = regulated + thermalPenalty;
   
   let trackMultiplier = 1.0;
   if (raceConfig && raceConfig.trackId) {
@@ -252,6 +263,10 @@ export function getDegradationUncertainty(compound, tyreAge, setup = null) {
   const setupDependentStressEffect = stressCoef * simulationLapStress * tyreAge;
   
   deltaCI += Math.abs(setupDependentStressEffect * 0.2); // Rough 20% uncertainty added for extreme setups
+  
+  // Apply 2026 Regulation Transfer to scale uncertainty band consistently
+  const regResult = calculateRegulationTransferFactor(setup, simulationLapStress, 0.0, compound);
+  deltaCI *= regResult.factor;
   
   let trackMultiplier = 1.0;
   if (raceConfig && raceConfig.trackId) {
@@ -292,6 +307,10 @@ export function getMarginalDegRate(compound, tyreAge, setup = null) {
   const simulationLapStress = getSimulationLapStress(setup);
   const setupMarginalEffect = stressCoef * simulationLapStress; 
   rate += setupMarginalEffect;
+  
+  // Apply 2026 Regulation Transfer to marginal rate for consistent strategy slopes
+  const regResult = calculateRegulationTransferFactor(setup, simulationLapStress, 0.0, compound);
+  rate *= regResult.factor;
   
   let trackMultiplier = 1.0;
   if (raceConfig && raceConfig.trackId) {
