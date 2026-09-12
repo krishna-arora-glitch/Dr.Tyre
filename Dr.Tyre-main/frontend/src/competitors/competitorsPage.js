@@ -9,8 +9,9 @@ let initialized = false;
 let currentModelData = null;
 let lastSimState = null;
 let selectedCarNumber = null;
+let lastTableUpdateTime = 0;
 
-// Expose globally immediately so inline onclick handlers work without waiting
+// Expose globally immediately so inline onclick/onpointerdown handlers work without waiting
 if (typeof window !== 'undefined') {
   window.openCompetitorPrescription = openCompetitorPrescription;
   window.openCompetitorModal = openCompetitorPrescription;
@@ -37,7 +38,12 @@ export function initCompetitorsPage(modelData) {
   // Listen to simulation updates
   onSimulationUpdate((simState) => {
     lastSimState = simState;
-    updateCompetitorsTable(simState);
+    // Throttle table updates to at most once every 350ms so click/pointer events are never cancelled
+    const now = performance.now();
+    if (now - lastTableUpdateTime >= 350) {
+      lastTableUpdateTime = now;
+      updateCompetitorsTable(simState);
+    }
     if (selectedCarNumber !== null) {
       updateCompetitorModalIfOpen(simState);
     }
@@ -57,19 +63,23 @@ function setupModalEvents() {
   const closeBtn = document.getElementById('csm-btn-close');
 
   if (closeBtn) {
-    closeBtn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeCompetitorModal();
-    };
+    ['click', 'pointerdown'].forEach(evt => {
+      closeBtn.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeCompetitorModal();
+      });
+    });
   }
 
   if (modal) {
-    modal.onclick = (e) => {
-      if (e.target === modal) {
-        closeCompetitorModal();
-      }
-    };
+    ['click', 'pointerdown'].forEach(evt => {
+      modal.addEventListener(evt, (e) => {
+        if (e.target === modal) {
+          closeCompetitorModal();
+        }
+      });
+    });
   }
 
   // Close modal via Escape key
@@ -79,32 +89,34 @@ function setupModalEvents() {
     }
   });
 
-  // Event delegation on the document for competitor row clicks & inspect button clicks.
-  // This guarantees clicks are caught regardless of re-render or dynamic replacement.
-  document.addEventListener('click', (e) => {
-    // Check for inspect button click first
-    const inspectBtn = e.target.closest('.csm-inspect-btn');
-    if (inspectBtn) {
-      e.preventDefault();
-      e.stopPropagation();
-      const row = inspectBtn.closest('.competitor-row');
-      const carId = row?.dataset?.carNumber || row?.getAttribute('data-car-number') || row?.getAttribute('data-car-id');
-      if (carId !== null && carId !== undefined) {
-        console.log(`[Competitor Prescription] Inspect button clicked: #${carId}`);
-        openCompetitorPrescription(carId);
+  // Event delegation on both 'pointerdown' AND 'click'.
+  // 'pointerdown' fires the instant the button is pressed, with 0ms delay,
+  // making it completely immune to DOM re-renders.
+  ['pointerdown', 'click'].forEach(eventType => {
+    document.addEventListener(eventType, (e) => {
+      const inspectBtn = e.target.closest('.csm-inspect-btn');
+      if (inspectBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const row = inspectBtn.closest('.competitor-row');
+        const carId = row?.dataset?.carNumber || row?.getAttribute('data-car-number') || row?.getAttribute('data-car-id');
+        if (carId !== null && carId !== undefined) {
+          console.log(`[Competitor Prescription] Inspect button triggered (${eventType}) for #${carId}`);
+          openCompetitorPrescription(carId);
+        }
+        return;
       }
-      return;
-    }
 
-    // Check for competitor row click
-    const row = e.target.closest('.competitor-row');
-    if (!row) return;
-
-    const carId = row.dataset.carNumber || row.getAttribute('data-car-number') || row.getAttribute('data-car-id');
-    if (carId !== null && carId !== undefined) {
-      console.log(`[Competitor Prescription] Row clicked via delegation: #${carId}`);
-      openCompetitorPrescription(carId);
-    }
+      // If clicked anywhere on competitor row
+      const row = e.target.closest('.competitor-row');
+      if (row) {
+        const carId = row.dataset.carNumber || row.getAttribute('data-car-number') || row.getAttribute('data-car-id');
+        if (carId !== null && carId !== undefined) {
+          console.log(`[Competitor Prescription] Row triggered (${eventType}) for #${carId}`);
+          openCompetitorPrescription(carId);
+        }
+      }
+    });
   });
 }
 
@@ -207,7 +219,7 @@ function updateCompetitorsTable(simState) {
       : (String(rec.optimalLap).toUpperCase().includes('FINISH') ? 'RACE FINISH' : (String(rec.optimalLap).startsWith('Lap') ? rec.optimalLap : `Lap ${rec.optimalLap}`));
 
     html += `
-      <tr class="${trClass}" data-car-number="${car.number}" data-car-id="${car.id || car.number}" style="${trStyle}" onclick="window.openCompetitorPrescription('${car.number}')" title="Click to view detailed strategy prescription for Car ${car.number}">
+      <tr class="${trClass}" data-car-number="${car.number}" data-car-id="${car.id || car.number}" style="${trStyle}" onpointerdown="window.openCompetitorPrescription('${car.number}')" onclick="window.openCompetitorPrescription('${car.number}')" title="Click to view detailed strategy prescription for Car ${car.number}">
         <td><strong style="${isUser ? 'color: var(--cyan);' : ''}">P${car.position}</strong></td>
         <td>
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
@@ -215,7 +227,7 @@ function updateCompetitorsTable(simState) {
               <strong style="${isUser ? 'color: var(--cyan);' : ''}">${isUser ? 'YOU (#11)' : (car.driverName ? `${car.driverName} (#${car.number})` : `AI (#${car.number})`)}</strong>
               ${setupStr}
             </div>
-            <button type="button" class="csm-inspect-btn" onclick="event.stopPropagation(); window.openCompetitorPrescription('${car.number}')" style="cursor: pointer; font-family: var(--font-mono); font-size: 0.68rem; color: #1e40af; background: #dbeafe; padding: 3px 8px; border-radius: 4px; font-weight: 800; border: 1.5px solid #3b82f6; box-shadow: 0 1px 2px rgba(0,0,0,0.12); display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase;">
+            <button type="button" class="csm-inspect-btn" onpointerdown="event.stopPropagation(); window.openCompetitorPrescription('${car.number}')" onclick="event.stopPropagation(); window.openCompetitorPrescription('${car.number}')" style="cursor: pointer; font-family: var(--font-mono); font-size: 0.68rem; color: #1e40af; background: #dbeafe; padding: 3px 8px; border-radius: 4px; font-weight: 800; border: 1.5px solid #3b82f6; box-shadow: 0 1px 2px rgba(0,0,0,0.12); display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase;">
               <span>INSPECT</span> <span style="font-size: 0.8rem; font-weight: 900;">↗</span>
             </button>
           </div>
@@ -257,7 +269,21 @@ export function openCompetitorPrescription(carId) {
   }
 
   selectedCarNumber = car.number;
-  renderCompetitorStrategyModal(car, state);
+  try {
+    renderCompetitorStrategyModal(car, state);
+  } catch (err) {
+    console.error('[Competitor Prescription] Error in renderCompetitorStrategyModal:', err);
+    // Force show modal
+    const modal = document.getElementById('competitor-strategy-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.setProperty('display', 'flex', 'important');
+      modal.style.setProperty('visibility', 'visible', 'important');
+      modal.style.setProperty('opacity', '1', 'important');
+      modal.style.setProperty('pointer-events', 'auto', 'important');
+      modal.style.setProperty('z-index', '999999', 'important');
+    }
+  }
 }
 
 // Backwards-compatible alias
@@ -414,8 +440,12 @@ function renderCompetitorStrategyModal(car, simState) {
 function renderMiniBar(id, val) {
   const el = document.getElementById(id);
   const valEl = document.getElementById(`${id}-val`);
-  if (el) el.style.width = `${Math.min(100, Math.max(0, val))}%`;
-  if (valEl) valEl.textContent = Math.round(val);
+  const safeVal = Math.min(100, Math.max(0, Number(val) || 0));
+  if (el) {
+    el.style.height = `${safeVal}%`;
+    el.style.width = '100%';
+  }
+  if (valEl) valEl.textContent = Math.round(safeVal);
 }
 
 function getCompoundColor(compound) {
