@@ -22,13 +22,26 @@ export function computeTyreHealth(car, modelData = null) {
   const blisterFactor = thermalPenaltyRes.blisterFactor || 1.0;
   const overheatFactor = thermalPenaltyRes.overheatFactor || 1.0;
 
-  // ── A. GRIP LEVEL (0-100%) ──
-  // Usable envelope: 3.2s pace loss represents the limit of competitive grip
-  const degLossFactor = Math.min(1.0, degDelta / 3.2);
-  const thermalFactor = Math.min(1.0, deltaT / 18.0);
-  const stressFactor = Math.max(0, Math.min(1.0, lapStress / 1.2));
+  // ── A. GRIP LEVEL (0-100%) — F1 MONOTONIC WEAR CEILING + THERMAL SUPPRESSION ──
+  // 1. Permanent Wear Ceiling: strictly decays monotonically with tyreAge and compound degradation.
+  // Physical chemical wear cannot be reversed by cooling down or straights.
+  let wearGripCeiling;
+  if (tyreAge <= cliffLap) {
+    // Smooth power decay down to 25% at the cliff lap
+    wearGripCeiling = 1.0 - 0.75 * Math.pow(tyreAge / Math.max(1, cliffLap), 1.15);
+  } else {
+    // Past cliff: rapid drop towards 10% structural floor
+    const pastCliff = tyreAge - cliffLap;
+    const pastCliffBudget = Math.max(3, cliffLap * 0.35);
+    wearGripCeiling = Math.max(0.10, 0.25 * (1.0 - (pastCliff / pastCliffBudget)));
+  }
+
+  // 2. Thermal Suppression Factor: overheating and blistering suppress grip below the wear ceiling
+  const thermalSuppression = Math.min(0.25, (deltaT / 20.0) * 0.15 + (Math.max(0, blisterFactor - 1.0) / 2.5) * 0.10);
   
-  const usableGripFraction = 1.0 - (0.65 * degLossFactor + 0.25 * thermalFactor + 0.10 * stressFactor);
+  // 3. Current Usable Grip: always clamped by wearGripCeiling.
+  // As tyre cools down, grip recovers UP TO the wear ceiling, but NEVER exceeds previous laps' wear.
+  const usableGripFraction = Math.max(0.10, wearGripCeiling * (1.0 - thermalSuppression));
   const gripLevel = Math.round(Math.max(10, Math.min(100, 100 * usableGripFraction)));
 
   // ── B. TREAD REMAINING (0-100%) ──
