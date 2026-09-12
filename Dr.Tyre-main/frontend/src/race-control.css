@@ -527,6 +527,32 @@
   border: 1.5px solid #94a3b8 !important;
 }
 
+.competitor-row {
+  cursor: pointer !important;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.competitor-row td {
+  cursor: pointer !important;
+}
 .competitor-row:hover {
-  background: rgba(0, 0, 0, 0.04) !important;
+  background: rgba(0, 229, 255, 0.12) !important;
+  box-shadow: inset 3px 0 0 var(--cyan) !important;
+}
+.competitor-row.selected-row {
+  background: rgba(254, 240, 138, 0.40) !important;
+  box-shadow: inset 4px 0 0 #ca8a04 !important;
+}
+
+#competitor-strategy-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(5px) !important;
+  z-index: 99999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#competitor-strategy-modal.hidden {
+  display: none !important;
 }
