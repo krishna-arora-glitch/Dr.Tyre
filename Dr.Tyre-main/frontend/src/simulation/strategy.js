@@ -660,6 +660,7 @@ export function evaluatePitExitTraffic(currentRaceLap, lapsOnCurrent, currentFue
  */
 export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = null, allCars = null, thermalState = null, pitStops = 0) {
   const totalLaps = getTotalLaps();
+  const lapsRemaining = Math.max(0, totalLaps - currentLap);
   // Robust fuel normalization: handles both 0-100 percentage and 0.0-1.0 fraction
   let normalizedFuelPct = (fuelPct !== undefined && fuelPct !== null) ? Number(fuelPct) : 100;
   if (normalizedFuelPct > 0 && normalizedFuelPct <= 1.0) {

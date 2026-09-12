@@ -284,9 +284,11 @@ function startRace(scenarioId) {
   
   // Generate 20 cars with the user's selected grid position
   const basePace = circuit ? circuit.baseLapTimeSec : 94.0;
-  const playerGridPos = DOM.gridPositionSelect ? parseInt(DOM.gridPositionSelect.value, 10) : 8;
+  const rawGridPos = DOM.gridPositionSelect ? parseInt(DOM.gridPositionSelect.value, 10) : 8;
+  const playerGridPos = (!isNaN(rawGridPos) && rawGridPos >= 1 && rawGridPos <= 20) ? rawGridPos : 8;
   state.cars = generateGrid(playerGridPos, basePace);
-  state.userCar = state.cars.find(c => c.isUser);
+  state.userCar = state.cars.find(c => c.isUser) || state.cars[0];
+  if (state.userCar) state.userCar.isUser = true;
   
   applyScenario(scenarioId, state.cars, state);
   
