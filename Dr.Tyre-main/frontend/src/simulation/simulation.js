@@ -21,6 +21,11 @@ import { activePrior } from '../fuel-prior-state.js';
 import { buildTrackProfile, evaluateCarPhysics, getProfileAvgSpeed } from './trackDynamics.js';
 import { computeTyreHealth } from './tyreHealth.js';
 import { updateDriverBehaviour, createDriverBehaviourState } from './driverBehaviour.js';
+import { computeIndividualTyres } from './individualTyres.js';
+import { updateDynamicDegradation } from './dynamicDegradation.js';
+import { computeTrackDegradationMap, getActiveTrackSegment } from './trackDegradationMap.js';
+import { evaluateTyreRecovery } from './tyreRecovery.js';
+import { detectRaceOpportunities } from './opportunityDetector.js';
 
 let modelData = null;
 let telemetryData = null;
@@ -174,6 +179,71 @@ export function initSimulation(data, telData) {
   DOM.battleStats = document.getElementById('battle-stats');
   DOM.battleUndercut = document.getElementById('battle-undercut');
   DOM.battleRec = document.getElementById('battle-rec');
+
+  // Advanced Tyre Intelligence DOM Cache
+  DOM.intelTabBtns = document.querySelectorAll('.intel-tab-btn');
+  DOM.intelSubPanels = document.querySelectorAll('.intel-sub-panel');
+  DOM.rcIntelActiveBadge = document.getElementById('rc-intel-active-badge');
+
+  // Feature 1: 4-Tyre Matrix
+  DOM.rcTyreImbalance = document.getElementById('rc-tyre-imbalance');
+  DOM.rcLimitingTyre = document.getElementById('rc-limiting-tyre');
+  DOM.rcCardFL = document.getElementById('rc-card-fl');
+  DOM.rcCardFR = document.getElementById('rc-card-fr');
+  DOM.rcCardRL = document.getElementById('rc-card-rl');
+  DOM.rcCardRR = document.getElementById('rc-card-rr');
+  DOM.rcFLRate = document.getElementById('rc-fl-rate');
+  DOM.rcFLHealth = document.getElementById('rc-fl-health');
+  DOM.rcFLTemp = document.getElementById('rc-fl-temp');
+  DOM.rcFLThermalBadge = document.getElementById('rc-fl-thermal-badge');
+  DOM.rcFLAccel = document.getElementById('rc-fl-accel');
+  DOM.rcFRRate = document.getElementById('rc-fr-rate');
+  DOM.rcFRHealth = document.getElementById('rc-fr-health');
+  DOM.rcFRTemp = document.getElementById('rc-fr-temp');
+  DOM.rcFRThermalBadge = document.getElementById('rc-fr-thermal-badge');
+  DOM.rcFRAccel = document.getElementById('rc-fr-accel');
+  DOM.rcRLRate = document.getElementById('rc-rl-rate');
+  DOM.rcRLHealth = document.getElementById('rc-rl-health');
+  DOM.rcRLTemp = document.getElementById('rc-rl-temp');
+  DOM.rcRLThermalBadge = document.getElementById('rc-rl-thermal-badge');
+  DOM.rcRLAccel = document.getElementById('rc-rl-accel');
+  DOM.rcRRRate = document.getElementById('rc-rr-rate');
+  DOM.rcRRHealth = document.getElementById('rc-rr-health');
+  DOM.rcRRTemp = document.getElementById('rc-rr-temp');
+  DOM.rcRRThermalBadge = document.getElementById('rc-rr-thermal-badge');
+  DOM.rcRRAccel = document.getElementById('rc-rr-accel');
+
+  // Feature 2: Dynamic Degradation
+  DOM.rcDynRate = document.getElementById('rc-dyn-rate');
+  DOM.rcDynTrendBadge = document.getElementById('rc-dyn-trend-badge');
+  DOM.rcDynAccel = document.getElementById('rc-dyn-accel');
+  DOM.rcDynHistory = document.getElementById('rc-dyn-history');
+
+  // Feature 3: Track Degradation Map
+  DOM.rcTrackCurSeg = document.getElementById('rc-track-cur-seg');
+  DOM.rcTrackCurTag = document.getElementById('rc-track-cur-tag');
+  DOM.rcTrackCurIntensity = document.getElementById('rc-track-cur-intensity');
+  DOM.rcTrackCbCornering = document.getElementById('rc-track-cb-cornering');
+  DOM.rcTrackCbThermal = document.getElementById('rc-track-cb-thermal');
+  DOM.rcTrackCbBraking = document.getElementById('rc-track-cb-braking');
+  DOM.rcTrackCbTraction = document.getElementById('rc-track-cb-traction');
+  DOM.rcTrackStrip = document.getElementById('rc-track-strip');
+
+  // Feature 4: Tyre Recovery
+  DOM.rcRecPotential = document.getElementById('rc-rec-potential');
+  DOM.rcRecCurrent = document.getElementById('rc-rec-current');
+  DOM.rcRecManaged = document.getElementById('rc-rec-managed');
+  DOM.rcRecRecoverable = document.getElementById('rc-rec-recoverable');
+  DOM.rcRecExplanation = document.getElementById('rc-rec-explanation');
+
+  // Feature 5: Opportunity Detector
+  DOM.rcOppContainer = document.getElementById('rc-opp-container');
+  DOM.rcOppPrimaryTitle = document.getElementById('rc-opp-primary-title');
+  DOM.rcOppPrimaryConf = document.getElementById('rc-opp-primary-conf');
+  DOM.rcOppPrimaryScore = document.getElementById('rc-opp-primary-score');
+  DOM.rcOppPrimaryBenefit = document.getElementById('rc-opp-primary-benefit');
+  DOM.rcOppPrimaryReason = document.getElementById('rc-opp-primary-reason');
+  DOM.rcOppSecondaryList = document.getElementById('rc-opp-secondary-list');
   
   bindEvents();
 }
@@ -272,6 +342,27 @@ function bindEvents() {
   
   DOM.btnCloseWhy.addEventListener('click', () => {
     DOM.whyModal.classList.add('hidden');
+  });
+
+  // Advanced Tyre Intelligence Sub-Nav switching
+  DOM.intelTabBtns?.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const targetId = e.target.dataset.intelTarget;
+      DOM.intelTabBtns.forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      DOM.intelSubPanels.forEach(p => {
+        if (p.id === targetId) {
+          p.style.display = 'flex';
+          p.classList.add('active');
+        } else {
+          p.style.display = 'none';
+          p.classList.remove('active');
+        }
+      });
+      if (DOM.rcIntelActiveBadge) {
+        DOM.rcIntelActiveBadge.textContent = e.target.textContent;
+      }
+    });
   });
 }
 
@@ -777,6 +868,12 @@ function simulationLoop(now) {
     // ── Driver Behaviour & Driving Style Analysis Engine (ALL 20 CARS) ──
     updateDriverBehaviour(car, dt, state.raceEvent);
 
+    // ── Dynamic Degradation Rate + Acceleration (ALL 20 CARS) ──
+    updateDynamicDegradation(car, dt);
+
+    // ── Individual Tyre Degradation Matrix (ALL 20 CARS) ──
+    car.individualTyres = computeIndividualTyres(car, modelData);
+
     if (isNaN(lapTime) || !isFinite(lapTime) || lapTime <= 10) lapTime = car.baseLapTime || 94.0;
     
     // ── Update Progress ──
@@ -1172,8 +1269,19 @@ function updateUI() {
   // Update Live Telemetry
   updateTelemetryUI(u, telemetryData, modelData);
   
+  // ── Advanced Tyre Intelligence Updates (5 Features) ──
+  const trackMap = computeTrackDegradationMap(raceConfig.trackId || 'singapore', u, modelData);
+  state.trackDegradationMap = trackMap;
+  const currentSeg = getActiveTrackSegment(trackMap, u.progress);
+
+  const recoveryInfo = evaluateTyreRecovery(u, modelData, 2);
+  u.tyreRecovery = recoveryInfo;
+
+  const oppReport = detectRaceOpportunities(u, state.cars, state.lap, state.totalLaps, state.raceEvent, modelData);
+  state.opportunityReport = oppReport;
+
   // Strategy Prescription Engine
-  const rx = getPrescription(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup, state.cars, u.thermalState, u.pitStops, u.driverBehaviour);
+  const rx = getPrescription(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup, state.cars, u.thermalState, u.pitStops, u.driverBehaviour, recoveryInfo, oppReport);
   if (DOM.engCall) {
     if (rx.action.includes('PIT') && rx.targetCompound) {
       DOM.engCall.textContent = `${rx.action} → ${rx.targetCompound}`;
@@ -1239,6 +1347,142 @@ function updateUI() {
       DOM.rxAltBox.style.opacity = '0';
     }
   }
+
+  // ── Update 5 Advanced Tyre Intelligence HUD Panels ──
+  // 1. 4-Tyre Matrix
+  const indTyres = u.individualTyres || computeIndividualTyres(u, modelData);
+  if (indTyres) {
+    if (DOM.rcTyreImbalance) DOM.rcTyreImbalance.textContent = indTyres.imbalanceMessage;
+    if (DOM.rcLimitingTyre) {
+      DOM.rcLimitingTyre.textContent = `WORST: ${indTyres.limitingTyre}`;
+      DOM.rcLimitingTyre.style.color = '#991b1b';
+      DOM.rcLimitingTyre.style.background = '#fee2e2';
+    }
+
+    const corners = [
+      { key: 'FL', card: DOM.rcCardFL, rateEl: DOM.rcFLRate, healthEl: DOM.rcFLHealth, tempEl: DOM.rcFLTemp, badgeEl: DOM.rcFLThermalBadge, accelEl: DOM.rcFLAccel },
+      { key: 'FR', card: DOM.rcCardFR, rateEl: DOM.rcFRRate, healthEl: DOM.rcFRHealth, tempEl: DOM.rcFRTemp, badgeEl: DOM.rcFRThermalBadge, accelEl: DOM.rcFRAccel },
+      { key: 'RL', card: DOM.rcCardRL, rateEl: DOM.rcRLRate, healthEl: DOM.rcRLHealth, tempEl: DOM.rcRLTemp, badgeEl: DOM.rcRLThermalBadge, accelEl: DOM.rcRLAccel },
+      { key: 'RR', card: DOM.rcCardRR, rateEl: DOM.rcRRRate, healthEl: DOM.rcRRHealth, tempEl: DOM.rcRRTemp, badgeEl: DOM.rcRRThermalBadge, accelEl: DOM.rcRRAccel }
+    ];
+
+    corners.forEach(c => {
+      const data = indTyres[c.key];
+      if (data) {
+        if (c.rateEl) c.rateEl.textContent = `+${data.degradationRate.toFixed(3)} s/L`;
+        if (c.healthEl) {
+          c.healthEl.textContent = `${data.health}%`;
+          c.healthEl.style.color = data.health > 70 ? 'var(--green)' : (data.health > 45 ? 'var(--amber)' : 'var(--red)');
+        }
+        if (c.tempEl) c.tempEl.textContent = `${Math.round(data.temperature)}°C`;
+        if (c.badgeEl) {
+          c.badgeEl.textContent = data.thermalState;
+          if (data.thermalState === 'HOT' || data.thermalState === 'BLISTER') {
+            c.badgeEl.style.background = '#fee2e2';
+            c.badgeEl.style.color = '#991b1b';
+            c.badgeEl.style.borderColor = '#ef4444';
+          } else if (data.thermalState === 'WARM') {
+            c.badgeEl.style.background = '#fef3c7';
+            c.badgeEl.style.color = '#92400e';
+            c.badgeEl.style.borderColor = '#f59e0b';
+          } else {
+            c.badgeEl.style.background = '#dcfce7';
+            c.badgeEl.style.color = '#166534';
+            c.badgeEl.style.borderColor = '#22c55e';
+          }
+        }
+        if (c.accelEl) {
+          const s = data.degradationAcceleration >= 0 ? '+' : '';
+          c.accelEl.textContent = `${s}${data.degradationAcceleration.toFixed(3)}`;
+        }
+        if (c.card) {
+          if (c.key === indTyres.limitingTyre && indTyres.worstRatio >= 1.15) {
+            c.card.classList.add('worst-tyre-highlight');
+          } else {
+            c.card.classList.remove('worst-tyre-highlight');
+          }
+        }
+      }
+    });
+  }
+
+  // 2. Dynamic Degradation Rate + Acceleration
+  const dynDeg = u.dynamicDegradation || updateDynamicDegradation(u, 0.05);
+  if (dynDeg) {
+    if (DOM.rcDynRate) DOM.rcDynRate.textContent = dynDeg.rateFormatted;
+    if (DOM.rcDynTrendBadge) {
+      DOM.rcDynTrendBadge.textContent = `${dynDeg.trendSymbol} ${dynDeg.trend}`;
+      DOM.rcDynTrendBadge.style.color = dynDeg.trendColor;
+      DOM.rcDynTrendBadge.style.background = dynDeg.trend === 'SEVERE ACCELERATION' ? '#fee2e2' : (dynDeg.trend === 'ACCELERATING' ? '#fef08a' : '#dcfce7');
+      DOM.rcDynTrendBadge.style.borderColor = dynDeg.trendColor;
+    }
+    if (DOM.rcDynAccel) DOM.rcDynAccel.textContent = dynDeg.accelFormatted;
+    if (DOM.rcDynHistory) DOM.rcDynHistory.textContent = dynDeg.historyTrace;
+  }
+
+  // 3. Track Degradation Map
+  if (currentSeg) {
+    if (DOM.rcTrackCurSeg) DOM.rcTrackCurSeg.textContent = currentSeg.name.toUpperCase();
+    if (DOM.rcTrackCurTag) {
+      DOM.rcTrackCurTag.textContent = currentSeg.primaryTag;
+      DOM.rcTrackCurTag.style.color = currentSeg.color;
+      DOM.rcTrackCurTag.style.borderColor = currentSeg.color;
+    }
+    if (DOM.rcTrackCurIntensity) {
+      DOM.rcTrackCurIntensity.textContent = `${currentSeg.intensity}/100`;
+      DOM.rcTrackCurIntensity.style.color = currentSeg.color;
+    }
+    if (DOM.rcTrackCbCornering) DOM.rcTrackCbCornering.textContent = `${currentSeg.contributors.cornering}%`;
+    if (DOM.rcTrackCbThermal) DOM.rcTrackCbThermal.textContent = `${currentSeg.contributors.thermal}%`;
+    if (DOM.rcTrackCbBraking) DOM.rcTrackCbBraking.textContent = `${currentSeg.contributors.braking}%`;
+    if (DOM.rcTrackCbTraction) DOM.rcTrackCbTraction.textContent = `${currentSeg.contributors.traction}%`;
+  }
+  if (DOM.rcTrackStrip && trackMap && (!DOM.rcTrackStrip.children.length || state.lap !== DOM.rcTrackStrip._lastLap)) {
+    DOM.rcTrackStrip._lastLap = state.lap;
+    DOM.rcTrackStrip.innerHTML = '';
+    trackMap.forEach(seg => {
+      const segSpan = document.createElement('div');
+      const pctWidth = (seg.endPos - seg.startPos) * 100;
+      segSpan.style.width = `${pctWidth}%`;
+      segSpan.style.height = '100%';
+      segSpan.style.background = seg.color;
+      segSpan.title = `${seg.name} (${seg.intensity}/100 - ${seg.primaryTag})`;
+      DOM.rcTrackStrip.appendChild(segSpan);
+    });
+  }
+
+  // 4. Tyre Recovery Intelligence
+  if (recoveryInfo) {
+    if (DOM.rcRecPotential) {
+      DOM.rcRecPotential.textContent = `${recoveryInfo.recoveryPotentialPct}%`;
+      DOM.rcRecPotential.style.color = recoveryInfo.recoveryPotentialPct >= 50 ? 'var(--green)' : 'var(--amber)';
+    }
+    if (DOM.rcRecCurrent) DOM.rcRecCurrent.textContent = `+${recoveryInfo.currentDegRate.toFixed(3)} s/L`;
+    if (DOM.rcRecManaged) DOM.rcRecManaged.textContent = `+${recoveryInfo.managedDegRate.toFixed(3)} s/L`;
+    if (DOM.rcRecRecoverable) DOM.rcRecRecoverable.textContent = recoveryInfo.recoverableFormatted;
+    if (DOM.rcRecExplanation) DOM.rcRecExplanation.textContent = recoveryInfo.explanation;
+  }
+
+  // 5. Race Event Opportunity Detector
+  if (oppReport) {
+    const pOpp = oppReport.primaryOpportunity;
+    if (pOpp) {
+      if (DOM.rcOppPrimaryTitle) DOM.rcOppPrimaryTitle.textContent = pOpp.title;
+      if (DOM.rcOppPrimaryConf) DOM.rcOppPrimaryConf.textContent = `${pOpp.confidence} CONF`;
+      if (DOM.rcOppPrimaryScore) DOM.rcOppPrimaryScore.textContent = `${pOpp.score}%`;
+      if (DOM.rcOppPrimaryBenefit) DOM.rcOppPrimaryBenefit.textContent = pOpp.benefit;
+      if (DOM.rcOppPrimaryReason) DOM.rcOppPrimaryReason.textContent = pOpp.reason;
+    }
+    if (DOM.rcOppSecondaryList && oppReport.opportunities.length > 1) {
+      const secOpps = oppReport.opportunities.slice(1, 3);
+      DOM.rcOppSecondaryList.innerHTML = secOpps.map(op => `
+        <div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.08); border-radius: 4px; padding: 4px 6px; font-size: 0.58rem; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 700; color: var(--color-carbon);">${op.title}</span>
+          <strong style="color: var(--green); font-family: var(--font-mono);">${op.score}%</strong>
+        </div>
+      `).join('');
+    }
+  }
   
   if (DOM.engOptLap) {
     if (rx.optimalLap === 'N/A' || !rx.optimalLap) {
@@ -1259,7 +1503,7 @@ function updateUI() {
 
 function populateWhyModal() {
   const u = state.userCar;
-  const rx = getPrescription(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup, state.cars, u.thermalState, u.pitStops, u.driverBehaviour);
+  const rx = getPrescription(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup, state.cars, u.thermalState, u.pitStops, u.driverBehaviour, u.tyreRecovery, state.opportunityReport);
   
   const candidatesRows = (rx.candidates || []).map(c => {
     const isPrimary = c.rank === 1;

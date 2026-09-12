@@ -650,6 +650,205 @@
               </div>
             </div>
 
+            <!-- ── ADVANCED TYRE INTELLIGENCE (5 FEATURES) ── -->
+            <div class="rc-tyre-intel-container" style="border-top: 1.5px solid var(--color-carbon); padding-top: 10px; margin-top: 4px; display: flex; flex-direction: column; gap: 8px;">
+              
+              <!-- Section Title & Active Badge -->
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.68rem; font-weight: 900; letter-spacing: 0.5px; color: var(--color-carbon);">TYRE INTELLIGENCE</span>
+                <span id="rc-intel-active-badge" style="font-size: 0.60rem; font-weight: 800; padding: 1px 5px; border-radius: 3px; background: #e0f2fe; color: #0369a1; border: 1px solid #0284c7;">4-TYRE MATRIX</span>
+              </div>
+
+              <!-- Compact Sub-Nav Tabs -->
+              <div class="rc-intel-tabs" style="display: flex; gap: 3px; flex-wrap: wrap;">
+                <button type="button" class="intel-tab-btn active" data-intel-target="intel-matrix">4-TYRE</button>
+                <button type="button" class="intel-tab-btn" data-intel-target="intel-dynamic">DYNAMIC</button>
+                <button type="button" class="intel-tab-btn" data-intel-target="intel-trackmap">TRACK MAP</button>
+                <button type="button" class="intel-tab-btn" data-intel-target="intel-recovery">RECOVERY</button>
+                <button type="button" class="intel-tab-btn" data-intel-target="intel-opps">OPPS</button>
+              </div>
+
+              <!-- ── FEATURE 1: 4-TYRE MATRIX TAB ── -->
+              <div id="intel-matrix" class="intel-sub-panel active" style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.03); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.08); font-size: 0.62rem;">
+                  <span id="rc-tyre-imbalance" style="font-weight: 700; color: var(--color-carbon); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Balanced wear</span>
+                  <span id="rc-limiting-tyre" style="font-weight: 800; color: #991b1b; background: #fee2e2; padding: 1px 4px; border-radius: 3px; border: 1px solid #ef4444; flex-shrink: 0;">WORST: --</span>
+                </div>
+
+                <!-- 2x2 Matrix Cards -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                  <!-- FL -->
+                  <div id="rc-card-fl" class="tyre-corner-card" style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 6px; font-family: var(--font-mono);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <strong style="font-size: 0.72rem; color: var(--color-carbon);">FL</strong>
+                      <span id="rc-fl-thermal-badge" style="font-size: 0.58rem; font-weight: 800; padding: 1px 4px; border-radius: 2px; background: #dcfce7; color: #166534; border: 1px solid #22c55e;">OPT</span>
+                    </div>
+                    <div id="rc-fl-rate" style="font-size: 0.85rem; font-weight: 900; color: var(--color-carbon);">+0.052 s/L</div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.60rem; color: var(--text-muted); margin-top: 2px;">
+                      <span>HEALTH <strong id="rc-fl-health" style="color: var(--green);">86%</strong></span>
+                      <span id="rc-fl-temp" style="font-weight: 700; color: #000;">96°C</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.58rem; color: var(--text-muted); margin-top: 1px;">
+                      <span>ACCEL:</span>
+                      <span id="rc-fl-accel" style="font-weight: 700; color: var(--color-carbon);">+0.004</span>
+                    </div>
+                  </div>
+
+                  <!-- FR -->
+                  <div id="rc-card-fr" class="tyre-corner-card" style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 6px; font-family: var(--font-mono);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <strong style="font-size: 0.72rem; color: var(--color-carbon);">FR</strong>
+                      <span id="rc-fr-thermal-badge" style="font-size: 0.58rem; font-weight: 800; padding: 1px 4px; border-radius: 2px; background: #fee2e2; color: #991b1b; border: 1px solid #ef4444;">HOT</span>
+                    </div>
+                    <div id="rc-fr-rate" style="font-size: 0.85rem; font-weight: 900; color: var(--color-carbon);">+0.091 s/L</div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.60rem; color: var(--text-muted); margin-top: 2px;">
+                      <span>HEALTH <strong id="rc-fr-health" style="color: var(--amber);">68%</strong></span>
+                      <span id="rc-fr-temp" style="font-weight: 700; color: #000;">104°C</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.58rem; color: var(--text-muted); margin-top: 1px;">
+                      <span>ACCEL:</span>
+                      <span id="rc-fr-accel" style="font-weight: 700; color: var(--color-carbon);">+0.012</span>
+                    </div>
+                  </div>
+
+                  <!-- RL -->
+                  <div id="rc-card-rl" class="tyre-corner-card" style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 6px; font-family: var(--font-mono);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <strong style="font-size: 0.72rem; color: var(--color-carbon);">RL</strong>
+                      <span id="rc-rl-thermal-badge" style="font-size: 0.58rem; font-weight: 800; padding: 1px 4px; border-radius: 2px; background: #dcfce7; color: #166534; border: 1px solid #22c55e;">OPT</span>
+                    </div>
+                    <div id="rc-rl-rate" style="font-size: 0.85rem; font-weight: 900; color: var(--color-carbon);">+0.044 s/L</div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.60rem; color: var(--text-muted); margin-top: 2px;">
+                      <span>HEALTH <strong id="rc-rl-health" style="color: var(--green);">91%</strong></span>
+                      <span id="rc-rl-temp" style="font-weight: 700; color: #000;">95°C</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.58rem; color: var(--text-muted); margin-top: 1px;">
+                      <span>ACCEL:</span>
+                      <span id="rc-rl-accel" style="font-weight: 700; color: var(--color-carbon);">+0.002</span>
+                    </div>
+                  </div>
+
+                  <!-- RR -->
+                  <div id="rc-card-rr" class="tyre-corner-card" style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 6px; font-family: var(--font-mono);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <strong style="font-size: 0.72rem; color: var(--color-carbon);">RR</strong>
+                      <span id="rc-rr-thermal-badge" style="font-size: 0.58rem; font-weight: 800; padding: 1px 4px; border-radius: 2px; background: #dcfce7; color: #166534; border: 1px solid #22c55e;">OPT</span>
+                    </div>
+                    <div id="rc-rr-rate" style="font-size: 0.85rem; font-weight: 900; color: var(--color-carbon);">+0.061 s/L</div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.60rem; color: var(--text-muted); margin-top: 2px;">
+                      <span>HEALTH <strong id="rc-rr-health" style="color: var(--green);">79%</strong></span>
+                      <span id="rc-rr-temp" style="font-weight: 700; color: #000;">99°C</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.58rem; color: var(--text-muted); margin-top: 1px;">
+                      <span>ACCEL:</span>
+                      <span id="rc-rr-accel" style="font-weight: 700; color: var(--color-carbon);">+0.006</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── FEATURE 2: DYNAMIC DEGRADATION TAB ── -->
+              <div id="intel-dynamic" class="intel-sub-panel" style="display: none; flex-direction: column; gap: 6px;">
+                <div style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 0.62rem; font-weight: 700; color: var(--text-muted);">DEGRADATION RATE</span>
+                    <span id="rc-dyn-trend-badge" style="font-size: 0.62rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: #fef08a; color: #854d0e; border: 1px solid #eab308;">↑ ACCELERATING</span>
+                  </div>
+                  <div id="rc-dyn-rate" style="font-size: 1.25rem; font-weight: 900; font-family: var(--font-mono); color: var(--color-carbon); line-height: 1.1;">+0.078 s/lap</div>
+                  
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 6px; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 4px;">
+                    <span style="font-size: 0.62rem; font-weight: 700; color: var(--text-muted);">ACCELERATION:</span>
+                    <strong id="rc-dyn-accel" style="font-size: 0.85rem; font-weight: 900; font-family: var(--font-mono); color: var(--color-carbon);">+0.011 s/lap²</strong>
+                  </div>
+
+                  <div style="margin-top: 6px; background: rgba(0,0,0,0.03); border-radius: 4px; padding: 4px 6px; font-size: 0.62rem;">
+                    <span style="color: var(--text-muted); font-weight: 700;">RECENT PACE LOSS:</span>
+                    <div id="rc-dyn-history" style="font-family: var(--font-mono); font-weight: 800; color: var(--color-carbon); margin-top: 1px;">0.051 → 0.061 → 0.078</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── FEATURE 3: TRACK DEGRADATION MAP TAB ── -->
+              <div id="intel-trackmap" class="intel-sub-panel" style="display: none; flex-direction: column; gap: 6px;">
+                <div style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <strong id="rc-track-cur-seg" style="font-size: 0.72rem; color: var(--color-carbon);">TURN 10 / SECTOR 2</strong>
+                    <span id="rc-track-cur-tag" style="font-size: 0.58rem; font-weight: 800; padding: 1px 4px; border-radius: 3px; background: #fee2e2; color: #991b1b; border: 1px solid #ef4444;">HIGH CORNERING</span>
+                  </div>
+
+                  <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px;">
+                    <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 700;">STRESS INTENSITY:</span>
+                    <span id="rc-track-cur-intensity" style="font-size: 1.15rem; font-weight: 900; font-family: var(--font-mono); color: var(--color-carbon);">82/100</span>
+                  </div>
+
+                  <!-- 4 Contributor Percentages -->
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.60rem; background: rgba(0,0,0,0.03); padding: 5px; border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between;"><span>Cornering:</span><strong id="rc-track-cb-cornering">46%</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Thermal:</span><strong id="rc-track-cb-thermal">28%</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Braking:</span><strong id="rc-track-cb-braking">18%</strong></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Traction:</span><strong id="rc-track-cb-traction">8%</strong></div>
+                  </div>
+
+                  <!-- Interactive Mini Track Strip -->
+                  <div id="rc-track-strip" style="display: flex; height: 10px; border-radius: 3px; overflow: hidden; margin-top: 6px; border: 1px solid var(--color-carbon);">
+                    <!-- Segments rendered dynamically -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── FEATURE 4: TYRE RECOVERY TAB ── -->
+              <div id="intel-recovery" class="intel-sub-panel" style="display: none; flex-direction: column; gap: 6px;">
+                <div style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 0.62rem; font-weight: 700; color: var(--text-muted);">RECOVERY POTENTIAL</span>
+                    <strong id="rc-rec-potential" style="font-size: 0.95rem; font-weight: 900; font-family: var(--font-mono); color: var(--green);">68%</strong>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                    <div style="background: rgba(0,0,0,0.03); padding: 5px; border-radius: 4px;">
+                      <div style="font-size: 0.58rem; color: var(--text-muted); font-weight: 700;">CURRENT DEG</div>
+                      <div id="rc-rec-current" style="font-size: 0.82rem; font-weight: 800; font-family: var(--font-mono); color: var(--color-carbon);">+0.092 s/L</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.03); padding: 5px; border-radius: 4px;">
+                      <div style="font-size: 0.58rem; color: var(--text-muted); font-weight: 700;">AFTER 2L MANAGE</div>
+                      <div id="rc-rec-managed" style="font-size: 0.82rem; font-weight: 800; font-family: var(--font-mono); color: var(--green);">+0.071 s/L</div>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 4px; font-size: 0.62rem;">
+                    <span style="color: var(--text-muted); font-weight: 700;">RECOVERABLE PERF:</span>
+                    <strong id="rc-rec-recoverable" style="font-family: var(--font-mono); font-size: 0.80rem; color: var(--green);">-0.021 s/lap</strong>
+                  </div>
+
+                  <div id="rc-rec-explanation" style="font-size: 0.60rem; color: var(--color-carbon); font-weight: 600; line-height: 1.25; margin-top: 4px;">
+                    Thermal load is elevated but recoverable through 2-lap lift-and-coast management.
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── FEATURE 5: OPPORTUNITIES TAB ── -->
+              <div id="intel-opps" class="intel-sub-panel" style="display: none; flex-direction: column; gap: 6px;">
+                <div id="rc-opp-container" style="display: flex; flex-direction: column; gap: 6px;">
+                  <!-- Dynamic Opportunity Cards Populated by Simulation -->
+                  <div class="rc-opp-card" style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <strong id="rc-opp-primary-title" style="font-size: 0.68rem; color: var(--color-carbon);">UNDERCUT OPPORTUNITY</strong>
+                      <span id="rc-opp-primary-conf" style="font-size: 0.58rem; font-weight: 800; padding: 1px 4px; border-radius: 3px; background: #dcfce7; color: #166534; border: 1px solid #22c55e;">HIGH CONF</span>
+                    </div>
+                    <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px;">
+                      <span id="rc-opp-primary-score" style="font-size: 1.1rem; font-weight: 900; font-family: var(--font-mono); color: var(--color-carbon);">91%</span>
+                      <span id="rc-opp-primary-benefit" style="font-size: 0.62rem; font-weight: 800; color: var(--green);">+2.1s net track position</span>
+                    </div>
+                    <div id="rc-opp-primary-reason" style="font-size: 0.60rem; color: var(--text-secondary); line-height: 1.25;">
+                      Competitor ahead is degrading +0.014 s/lap faster.
+                    </div>
+                  </div>
+                  <div id="rc-opp-secondary-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+                </div>
+              </div>
+
+            </div>
+
             <!-- Hidden container for event-list compatibility -->
             <div id="event-list" style="display: none;"></div>
           </div>

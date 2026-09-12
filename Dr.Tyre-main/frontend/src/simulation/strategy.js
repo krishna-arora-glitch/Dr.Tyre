@@ -680,7 +680,7 @@ export function evaluatePitExitTraffic(currentRaceLap, lapsOnCurrent, currentFue
  * "What should the team do next?"
  * Evaluates live candidates deterministically using simulate_stint_time() and ranks them.
  */
-export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = null, allCars = null, thermalState = null, pitStops = 0, driverBehaviour = null) {
+export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = null, allCars = null, thermalState = null, pitStops = 0, driverBehaviour = null, tyreRecovery = null, opportunityReport = null) {
   const totalLaps = getTotalLaps();
   const lapsRemaining = Math.max(0, totalLaps - currentLap);
   // Robust fuel normalization: handles both 0-100 percentage and 0.0-1.0 fraction
@@ -1040,6 +1040,11 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     ? `Continue on ${compound} (Opening stint: Target stop Lap ${displayedOptimalLap} → ${primaryTargetCompound})`
     : primary.description;
 
+  // Integrate Tyre Recovery Intelligence into STAY OUT prescription
+  if (!isOpeningStint && primary.action === 'STAY OUT' && tyreRecovery?.isRecoverable && tyreRecovery?.recoveryPotentialPct >= 50) {
+    recommendedAction = `STAY OUT — 2 LAP MANAGEMENT (${primary.description})`;
+  }
+
   // ── Synthesize Dynamic Physical Reasoning ──
   const currentPaceLoss = getDegradationDelta(compound, tyreAge, setup, thermalState);
   let reason = '';
@@ -1093,6 +1098,11 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     reason += driverAdvisory;
   }
 
+  // Opportunity Detector Advisory (does not override deterministic pit logic)
+  if (opportunityReport?.primaryOpportunity && opportunityReport.primaryOpportunity.score >= 70) {
+    reason += ` Opportunity: ${opportunityReport.primaryOpportunity.title} (${opportunityReport.primaryOpportunity.score}% score) — ${opportunityReport.primaryOpportunity.reason}`;
+  }
+
   // Alternative synthesis
   let alternativeObj = null;
   if (alternative && alternative !== primary) {
@@ -1138,6 +1148,8 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     alternative: alternativeObj,
     driverBehaviourState: driverBehaviour?.state || 'BALANCED',
     driverAdvisory: driverAdvisory.trim(),
+    tyreRecovery: tyreRecovery || null,
+    opportunityReport: opportunityReport || null,
 
     // ── Backwards Compatibility Aliases ──
     state: primary.action,

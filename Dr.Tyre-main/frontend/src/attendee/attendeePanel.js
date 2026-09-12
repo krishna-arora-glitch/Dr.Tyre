@@ -344,6 +344,32 @@ function rebuildCarCards(cars) {
         </div>
       </div>
 
+      <!-- 4-Corner Individual Tyre Matrix & Dynamic Rate -->
+      <div class="glass-panel" style="padding:10px 14px; border-left:5px solid #0284c7;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:0.68rem; font-weight:800; color:var(--color-carbon);">4-CORNER TYRE HEALTH</span>
+          <span id="attendee-dyn-trend-${index}" style="font-size:0.62rem; font-weight:800; padding:1px 5px; border-radius:3px; background:#dcfce7; color:#166534;">STABLE</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; font-family:var(--font-mono); font-size:0.65rem; text-align:center;">
+          <div style="background:rgba(0,0,0,0.03); padding:4px; border-radius:3px; border:1px solid rgba(0,0,0,0.1);">
+            <div style="font-weight:700; color:var(--text-muted);">FL</div>
+            <strong id="attendee-fl-${index}">--</strong>
+          </div>
+          <div style="background:rgba(0,0,0,0.03); padding:4px; border-radius:3px; border:1px solid rgba(0,0,0,0.1);">
+            <div style="font-weight:700; color:var(--text-muted);">FR</div>
+            <strong id="attendee-fr-${index}">--</strong>
+          </div>
+          <div style="background:rgba(0,0,0,0.03); padding:4px; border-radius:3px; border:1px solid rgba(0,0,0,0.1);">
+            <div style="font-weight:700; color:var(--text-muted);">RL</div>
+            <strong id="attendee-rl-${index}">--</strong>
+          </div>
+          <div style="background:rgba(0,0,0,0.03); padding:4px; border-radius:3px; border:1px solid rgba(0,0,0,0.1);">
+            <div style="font-weight:700; color:var(--text-muted);">RR</div>
+            <strong id="attendee-rr-${index}">--</strong>
+          </div>
+        </div>
+      </div>
+
       <!-- Pit Strategy Recommendation -->
       <div class="glass-panel attendee-strategy-card" style="padding:16px 18px; border-left:5px solid var(--amber);">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
@@ -683,6 +709,39 @@ function updateAttendeePanel(simState) {
         punctBadge.style.color = health.punctureRiskColor;
         punctBadge.style.background = health.punctureRiskBg;
         punctBadge.style.borderColor = health.punctureRiskColor;
+      }
+    }
+
+    // ── 4-Corner Individual Tyre Matrix & Dynamic Degradation (SELECTED CAR) ──
+    const ind = car.individualTyres;
+    if (ind) {
+      const flEl = document.getElementById(`attendee-fl-${index}`);
+      if (flEl) {
+        flEl.textContent = `${ind.FL.health}%`;
+        flEl.style.color = ind.FL.health > 70 ? 'var(--green)' : (ind.FL.health > 45 ? 'var(--amber)' : 'var(--red)');
+      }
+      const frEl = document.getElementById(`attendee-fr-${index}`);
+      if (frEl) {
+        frEl.textContent = `${ind.FR.health}%`;
+        frEl.style.color = ind.FR.health > 70 ? 'var(--green)' : (ind.FR.health > 45 ? 'var(--amber)' : 'var(--red)');
+      }
+      const rlEl = document.getElementById(`attendee-rl-${index}`);
+      if (rlEl) {
+        rlEl.textContent = `${ind.RL.health}%`;
+        rlEl.style.color = ind.RL.health > 70 ? 'var(--green)' : (ind.RL.health > 45 ? 'var(--amber)' : 'var(--red)');
+      }
+      const rrEl = document.getElementById(`attendee-rr-${index}`);
+      if (rrEl) {
+        rrEl.textContent = `${ind.RR.health}%`;
+        rrEl.style.color = ind.RR.health > 70 ? 'var(--green)' : (ind.RR.health > 45 ? 'var(--amber)' : 'var(--red)');
+      }
+    }
+    const dyn = car.dynamicDegradation;
+    if (dyn) {
+      const trendEl = document.getElementById(`attendee-dyn-trend-${index}`);
+      if (trendEl) {
+        trendEl.textContent = `${dyn.trendSymbol} ${dyn.trend}`;
+        trendEl.style.color = dyn.trendColor;
       }
     }
 
