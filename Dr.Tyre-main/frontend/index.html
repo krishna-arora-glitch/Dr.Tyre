@@ -771,12 +771,9 @@
         <div id="rc-panel-tire-strategy" class="sub-panel">
 
 <div class="research-page">
-        <!-- Sub-navigation -->
+        <!-- Sub-navigation: Only Ghost Baseline -->
         <div class="research-sub-nav">
           <button class="sub-nav-btn active" data-target="sub-ghost-baseline">GHOST BASELINE</button>
-          <button class="sub-nav-btn" data-target="sub-tyre-overview">TYRE OVERVIEW</button>
-          <button class="sub-nav-btn" data-target="sub-compare">COMPARE</button>
-          <button class="sub-nav-btn" data-target="sub-investigate">INVESTIGATE</button>
         </div>
 
         <!-- ── Sub: Ghost Baseline ── -->
@@ -879,6 +876,8 @@
           </div>
         </div>
 
+        <!-- ── Hidden Sub-Panels (Preserved for internal JS compatibility) ── -->
+        <div style="display: none;">
         <!-- ── Sub: Tyre Overview ── -->
         <div id="sub-tyre-overview" class="sub-panel">
           
@@ -959,6 +958,7 @@
             <button class="investigate-q-btn" data-question="3">How uncertain is the estimate?</button>
           </div>
           <div id="investigate-answer"></div>
+        </div>
         </div>
       </div>
       </div>
