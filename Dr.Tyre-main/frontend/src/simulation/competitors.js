@@ -3,6 +3,7 @@
  * Generates and manages the AI competitors in the simulation.
  */
 import { getRecommendation } from './strategy.js';
+import { createDriverBehaviourState } from './driverBehaviour.js';
 
 // Access modelData from window if needed, or pass it explicitly.
 // Currently it expects modelData to exist globally or we can use window.modelData
@@ -130,6 +131,7 @@ export function generateGrid(userStartingPos, basePace = 94.0) {
       lastLapTime: null,
       bestLapTime: null,
       lapTimes: [],
+      driverBehaviour: createDriverBehaviourState(setup),
     });
   }
   

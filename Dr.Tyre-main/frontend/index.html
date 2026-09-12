@@ -512,6 +512,36 @@
               <div style="display:none;"><span id="rc-tyre-temp"></span><span id="rc-stress-val"></span><span id="rc-delta"></span><span id="rc-deg-rate"></span></div>
             </div>
 
+            <!-- DRIVER BEHAVIOUR CARD -->
+            <div class="rc-behaviour-card" style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); padding: 10px; border-radius: 6px; margin-bottom: 14px; box-shadow: 0 2px 0 rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.68rem; color: var(--color-carbon); font-weight: 900; letter-spacing: 0.5px;">DRIVER BEHAVIOUR</span>
+                <span id="rc-beh-badge" style="font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--color-carbon); background: #fef08a; color: #000;">BALANCED</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                <div>
+                  <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 700;">BEHAVIOUR SCORE</span>
+                  <div style="display: flex; align-items: baseline; gap: 2px;">
+                    <span id="rc-beh-score" style="font-size: 1.3rem; font-weight: 900; font-family: var(--font-mono); color: var(--color-carbon); line-height: 1;">50</span>
+                    <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">/100</span>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 700;">CONFIDENCE</span>
+                  <div id="rc-beh-conf" style="font-size: 0.72rem; font-weight: 800; color: var(--green);">HIGH</div>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.62rem; margin-bottom: 6px;">
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--text-muted)">Throttle Agg:</span><strong id="rc-beh-th">MED</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--text-muted)">Braking Agg:</span><strong id="rc-beh-br">MED</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--text-muted)">Smoothness:</span><strong id="rc-beh-smooth">MED</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--text-muted)">Consistency:</span><strong id="rc-beh-cons">HIGH</strong></div>
+              </div>
+              <div id="rc-beh-explanation" style="font-size: 0.62rem; color: var(--color-carbon); font-weight: 600; line-height: 1.25; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 5px;">
+                Balanced behaviour: throttle and braking patterns remain close to baseline.
+              </div>
+            </div>
+
             <!-- GAPS -->
             <div class="rc-gaps" style="margin-top: auto;">
               <div class="gap-row ahead">

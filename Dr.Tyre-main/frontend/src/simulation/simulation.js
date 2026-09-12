@@ -20,6 +20,7 @@ import { initTelemetryUI, updateTelemetryUI } from './telemetry-ui.js';
 import { activePrior } from '../fuel-prior-state.js';
 import { buildTrackProfile, evaluateCarPhysics, getProfileAvgSpeed } from './trackDynamics.js';
 import { computeTyreHealth } from './tyreHealth.js';
+import { updateDriverBehaviour, createDriverBehaviourState } from './driverBehaviour.js';
 
 let modelData = null;
 let telemetryData = null;
@@ -137,6 +138,16 @@ export function initSimulation(data, telData) {
   DOM.statusBanner = document.getElementById('rc-status-banner');
   DOM.lapHistoryBody = document.getElementById('lap-history-body');
   DOM.eventList = document.getElementById('event-list');
+
+  // Driver Behaviour Analysis
+  DOM.rcBehBadge = document.getElementById('rc-beh-badge');
+  DOM.rcBehScore = document.getElementById('rc-beh-score');
+  DOM.rcBehConf = document.getElementById('rc-beh-conf');
+  DOM.rcBehTh = document.getElementById('rc-beh-th');
+  DOM.rcBehBr = document.getElementById('rc-beh-br');
+  DOM.rcBehSmooth = document.getElementById('rc-beh-smooth');
+  DOM.rcBehCons = document.getElementById('rc-beh-cons');
+  DOM.rcBehExplanation = document.getElementById('rc-beh-explanation');
   
   // Engineer / Prescription Engine
   DOM.engCall = document.getElementById('eng-call');
@@ -672,12 +683,13 @@ function simulationLoop(now) {
     const betaCorner = 0.75;
     const cornerHeatRate = betaCorner * cornerFactor;
 
-    // Physical modifiers: compound hysteretic friction, tyre wear thinning, dirty air turbulence
+    // Physical modifiers: compound hysteretic friction, tyre wear thinning, dirty air turbulence, driver behaviour
     const compoundHeatScale = car.compound === 'SOFT' ? 1.05 : (car.compound === 'HARD' ? 0.95 : 1.0);
     const ageHeatScale = 1.0 + 0.007 * Math.min(35, car.tyreAge || 0);
     const trafficHeatScale = 1.0 + 0.12 * (car.aeroInterference || 0);
+    const behaviourHeatScale = car.driverBehaviour?.thermalModifier || 1.0;
 
-    const totalHeatRate = (speedHeatRate + brakeHeatRate + cornerHeatRate) * compoundHeatScale * ageHeatScale * trafficHeatScale;
+    const totalHeatRate = (speedHeatRate + brakeHeatRate + cornerHeatRate) * compoundHeatScale * ageHeatScale * trafficHeatScale * behaviourHeatScale;
 
     // Continuous cooling rate: proportional to (T_tyre - T_ambient) with airflow velocity
     const airVelocityScale = 0.8 + 0.4 * (currentSpeed / 250.0);
@@ -706,8 +718,8 @@ function simulationLoop(now) {
     car.thermalPenalty = thermalRes.thermalPenalty;
     car.thermalDegradation = thermalRes.thermalPenalty;
 
-    // Calculate pacing including thermal degradation variable & dirty air stress
-    let degDelta = getDegradationDelta(car.compound, car.tyreAge, car.setup, car.thermalState, car.aeroInterference || 0);
+    // Calculate pacing including thermal degradation variable, dirty air stress & driver behaviour stress modifier
+    let degDelta = getDegradationDelta(car.compound, car.tyreAge, car.setup, car.thermalState, car.aeroInterference || 0, car.driverBehaviour?.tyreStressModifier || 1.0);
     
     // Fuel effect: cars get faster as they burn fuel
     // 1% fuel = ~1.1kg. activePrior is s/kg.
@@ -759,6 +771,9 @@ function simulationLoop(now) {
 
     // ── 5-Indicator Tyre Health & Puncture Risk Engine (ALL 20 CARS) ──
     car.tyreHealth = computeTyreHealth(car, modelData);
+
+    // ── Driver Behaviour & Driving Style Analysis Engine (ALL 20 CARS) ──
+    updateDriverBehaviour(car, dt, state.raceEvent);
 
     if (isNaN(lapTime) || !isFinite(lapTime) || lapTime <= 10) lapTime = car.baseLapTime || 94.0;
     
@@ -1033,6 +1048,51 @@ function updateUI() {
       if (DOM.rcRiskSpeed) DOM.rcRiskSpeed.textContent = `${health.components.speedRisk}%`;
     }
   }
+
+  // ── Driver Behaviour Analysis Panel ──
+  const beh = u.driverBehaviour;
+  if (beh) {
+    if (DOM.rcBehBadge) {
+      DOM.rcBehBadge.textContent = beh.state;
+      DOM.rcBehBadge.className = '';
+      if (beh.state === 'ATTACK') DOM.rcBehBadge.className = 'beh-badge-attack';
+      else if (beh.state === 'BALANCED') DOM.rcBehBadge.className = 'beh-badge-balanced';
+      else if (beh.state === 'CONSERVATIVE') DOM.rcBehBadge.className = 'beh-badge-conservative';
+      else if (beh.state === 'DEFENSIVE') DOM.rcBehBadge.className = 'beh-badge-defensive';
+      else if (beh.state === 'OVERDRIVING') DOM.rcBehBadge.className = 'beh-badge-overdriving';
+      DOM.rcBehBadge.style.fontSize = '0.65rem';
+      DOM.rcBehBadge.style.fontWeight = '800';
+      DOM.rcBehBadge.style.padding = '2px 6px';
+      DOM.rcBehBadge.style.borderRadius = '4px';
+      DOM.rcBehBadge.style.border = '1px solid var(--color-carbon)';
+    }
+    if (DOM.rcBehScore) {
+      DOM.rcBehScore.textContent = Math.round(beh.score);
+    }
+    if (DOM.rcBehConf) {
+      DOM.rcBehConf.textContent = beh.confidence;
+      DOM.rcBehConf.style.color = beh.confidence === 'HIGH' ? 'var(--green)' : (beh.confidence === 'MEDIUM' ? 'var(--amber)' : '#888');
+    }
+    if (DOM.rcBehTh) {
+      DOM.rcBehTh.textContent = beh.throttleAggression > 0.65 ? 'HIGH' : (beh.throttleAggression > 0.35 ? 'MED' : 'LOW');
+      DOM.rcBehTh.style.color = beh.throttleAggression > 0.65 ? 'var(--red)' : (beh.throttleAggression > 0.35 ? 'var(--color-carbon)' : 'var(--green)');
+    }
+    if (DOM.rcBehBr) {
+      DOM.rcBehBr.textContent = beh.brakingAggression > 0.65 ? 'HIGH' : (beh.brakingAggression > 0.35 ? 'MED' : 'LOW');
+      DOM.rcBehBr.style.color = beh.brakingAggression > 0.65 ? 'var(--red)' : (beh.brakingAggression > 0.35 ? 'var(--color-carbon)' : 'var(--green)');
+    }
+    if (DOM.rcBehSmooth) {
+      DOM.rcBehSmooth.textContent = beh.inputSharpness < 0.35 ? 'SMOOTH' : (beh.inputSharpness < 0.65 ? 'MED' : 'SHARP');
+      DOM.rcBehSmooth.style.color = beh.inputSharpness < 0.35 ? 'var(--green)' : (beh.inputSharpness < 0.65 ? 'var(--color-carbon)' : 'var(--red)');
+    }
+    if (DOM.rcBehCons) {
+      DOM.rcBehCons.textContent = beh.inconsistency < 0.35 ? 'HIGH' : (beh.inconsistency < 0.65 ? 'MED' : 'LOW');
+      DOM.rcBehCons.style.color = beh.inconsistency < 0.35 ? 'var(--green)' : (beh.inconsistency < 0.65 ? 'var(--color-carbon)' : 'var(--amber)');
+    }
+    if (DOM.rcBehExplanation) {
+      DOM.rcBehExplanation.textContent = beh.explanation || 'Monitoring telemetry patterns...';
+    }
+  }
   
   const rcTyreTemp = document.getElementById('rc-tyre-temp');
   if (u.tyreTemp) {
@@ -1096,7 +1156,7 @@ function updateUI() {
   updateTelemetryUI(u, telemetryData, modelData);
   
   // Strategy Prescription Engine
-  const rx = getPrescription(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup, state.cars, u.thermalState, u.pitStops);
+  const rx = getPrescription(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup, state.cars, u.thermalState, u.pitStops, u.driverBehaviour);
   if (DOM.engCall) {
     if (rx.action.includes('PIT') && rx.targetCompound) {
       DOM.engCall.textContent = `${rx.action} → ${rx.targetCompound}`;
@@ -1182,7 +1242,7 @@ function updateUI() {
 
 function populateWhyModal() {
   const u = state.userCar;
-  const rx = getPrescription(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup, state.cars, u.thermalState, u.pitStops);
+  const rx = getPrescription(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup, state.cars, u.thermalState, u.pitStops, u.driverBehaviour);
   
   const candidatesRows = (rx.candidates || []).map(c => {
     const isPrimary = c.rank === 1;

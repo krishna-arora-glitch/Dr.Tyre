@@ -183,27 +183,29 @@ export function calculateThermalPenalty(compound, tyreAge, tyreTemp) {
  * Compute the predicted lap-time delta from tyre degradation.
  * Δt_deg = BaseAgeDegradation × (1 + StressFactor) + ThermalPenalty
  */
-export function getDegradationDelta(compound, tyreAge, setup = null, thermalState = null, aeroInterference = 0.0) {
+export function getDegradationDelta(compound, tyreAge, setup = null, thermalState = null, aeroInterference = 0.0, driverBehaviourModifier = 1.0) {
   let baseAgeDeg = 0;
-  let stressCoef = 0.0;
+  let stressCoef = 0.02; // Default fallback
   
   if (!modelData?.compounds?.[compound]) {
-    const rates = { SOFT: 0.12, MEDIUM: 0.07, HARD: 0.04 };
-    const quads = { SOFT: 0.004, MEDIUM: 0.0015, HARD: 0.0005 };
-    baseAgeDeg = (rates[compound] || 0.07) * tyreAge + (quads[compound] || 0.001) * tyreAge * tyreAge;
-    stressCoef = 0.02; // Default
+    const defaultRates = { SOFT: 0.12, MEDIUM: 0.07, HARD: 0.04 };
+    baseAgeDeg = (defaultRates[compound] || 0.07) * tyreAge;
   } else {
     const c = modelData.compounds[compound];
-    baseAgeDeg = c.deg_linear * tyreAge + c.deg_quadratic * tyreAge * tyreAge;
     stressCoef = c.stress_coef || 0.02;
     
+    // Check if quadratic curve has an inverted vertex (β₂ < 0)
     if (c.deg_quadratic < 0) {
       const vertexAge = -c.deg_linear / (2 * c.deg_quadratic);
       if (tyreAge > vertexAge) {
-        const vertexDelta = c.deg_linear * vertexAge + c.deg_quadratic * vertexAge * vertexAge;
-        const fallbackLinear = 0.1;
-        baseAgeDeg = vertexDelta + fallbackLinear * (tyreAge - vertexAge);
+        const peakDeg = c.deg_linear * vertexAge + c.deg_quadratic * vertexAge * vertexAge;
+        const pastVertexLaps = tyreAge - vertexAge;
+        baseAgeDeg = peakDeg + pastVertexLaps * 0.1;
+      } else {
+        baseAgeDeg = c.deg_linear * tyreAge + c.deg_quadratic * tyreAge * tyreAge;
       }
+    } else {
+      baseAgeDeg = c.deg_linear * tyreAge + c.deg_quadratic * tyreAge * tyreAge;
     }
   }
   
@@ -216,8 +218,9 @@ export function getDegradationDelta(compound, tyreAge, setup = null, thermalStat
   const thermalZ = deltaT > 0 ? (deltaT / 12.0) : 0.0;
   const simulationLapStress = getSimulationLapStress(setup, thermalZ, aeroInterference);
   
-  // StressFactor modifies BaseAgeDegradation
-  const stressFactor = stressCoef * simulationLapStress;
+  // StressFactor modifies BaseAgeDegradation (bounded by driver behaviour modifier, 0.97 - 1.10)
+  const boundedModifier = Math.max(0.97, Math.min(1.10, driverBehaviourModifier || 1.0));
+  const stressFactor = stressCoef * simulationLapStress * boundedModifier;
   
   // 2024 stress-adjusted baseline
   const stressAdjusted = baseAgeDeg * (1 + stressFactor);
@@ -677,7 +680,7 @@ export function evaluatePitExitTraffic(currentRaceLap, lapsOnCurrent, currentFue
  * "What should the team do next?"
  * Evaluates live candidates deterministically using simulate_stint_time() and ranks them.
  */
-export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = null, allCars = null, thermalState = null, pitStops = 0) {
+export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = null, allCars = null, thermalState = null, pitStops = 0, driverBehaviour = null) {
   const totalLaps = getTotalLaps();
   const lapsRemaining = Math.max(0, totalLaps - currentLap);
   // Robust fuel normalization: handles both 0-100 percentage and 0.0-1.0 fraction
@@ -1075,6 +1078,21 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     reason = `Push for 2 laps to build pit gap buffer against rivals while tyre degradation remains manageable. Lap ${currentLap + 2} is the optimal pit lap; strategy will be re-evaluated on Lap ${currentLap + 1}.`;
   }
 
+  // Driver Behaviour Contextual Advisory
+  let driverAdvisory = '';
+  if (driverBehaviour) {
+    if (driverBehaviour.state === 'OVERDRIVING') {
+      driverAdvisory = ' OVERDRIVING detected: sharp throttle/brake transitions are accelerating tyre stress and thermal degradation.';
+    } else if (driverBehaviour.state === 'ATTACK') {
+      driverAdvisory = ' ATTACK driving style is increasing projected tyre degradation (+3.5%).';
+    } else if (driverBehaviour.state === 'CONSERVATIVE') {
+      driverAdvisory = ' CONSERVATIVE pace: tyre preservation optimal.';
+    }
+  }
+  if (driverAdvisory) {
+    reason += driverAdvisory;
+  }
+
   // Alternative synthesis
   let alternativeObj = null;
   if (alternative && alternative !== primary) {
@@ -1118,6 +1136,8 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     confidence: cInfo.trusted ? 'HIGH' : 'MEDIUM',
     candidates,
     alternative: alternativeObj,
+    driverBehaviourState: driverBehaviour?.state || 'BALANCED',
+    driverAdvisory: driverAdvisory.trim(),
 
     // ── Backwards Compatibility Aliases ──
     state: primary.action,

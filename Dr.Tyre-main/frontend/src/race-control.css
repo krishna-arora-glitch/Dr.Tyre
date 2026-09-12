@@ -423,3 +423,33 @@
 .btn-secondary:hover { opacity: 0.8; }
 
 #track-svg { width: 100%; height: 100%; }
+
+/* Driver Behaviour Card */
+.rc-behaviour-card {
+  font-family: var(--font-mono);
+}
+.beh-badge-attack {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border-color: #ef4444 !important;
+}
+.beh-badge-balanced {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border-color: #22c55e !important;
+}
+.beh-badge-conservative {
+  background: #e0f2fe !important;
+  color: #075985 !important;
+  border-color: #0284c7 !important;
+}
+.beh-badge-defensive {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border-color: #f59e0b !important;
+}
+.beh-badge-overdriving {
+  background: #fce7f3 !important;
+  color: #9d174d !important;
+  border-color: #ec4899 !important;
+}
