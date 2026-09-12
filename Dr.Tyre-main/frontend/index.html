@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrackShift — AI Motorsport Intelligence</title>
+  <meta name="description" content="AI Motorsport Intelligence: isolate true tyre degradation from practice data and simulate race strategy in real time." />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Inter:wght@500;700&display=swap" rel="stylesheet" />
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- ─── Header ─── -->
+    <div class="marquee-banner">
+      <div class="marquee-content">
+        <span>TRACKSHIFT 2026 // ALL THINGS SUI // </span>
+        <span>TRACKSHIFT 2026 // ALL THINGS SUI // </span>
+        <span>TRACKSHIFT 2026 // ALL THINGS SUI // </span>
+        <span>TRACKSHIFT 2026 // ALL THINGS SUI // </span>
+        <span>TRACKSHIFT 2026 // ALL THINGS SUI // </span>
+        <span>TRACKSHIFT 2026 // ALL THINGS SUI // </span>
+        <span>TRACKSHIFT 2026 // ALL THINGS SUI // </span>
+        <span>TRACKSHIFT 2026 // ALL THINGS SUI // </span>
+      </div>
+    </div>
+    <header id="app-header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">S</span>
+          <span class="logo-text">TRACK<span class="logo-highlight">SHIFT</span></span>
+        </div>
+        <span class="header-badge" id="race-badge">TRACKSHIFT 2026</span>
+      </div>
+      <nav class="tab-nav" id="tab-nav">
+        <button class="nav-tab active" data-target="panel-track-select" id="tab-track-select">TRACK SETUP</button>
+        <button class="nav-tab" data-target="panel-car-setup" id="tab-car-setup">CAR SETUP</button>
+        <button class="nav-tab" data-target="panel-simulation" id="tab-simulation">RACE CONTROL</button>
+        <button class="nav-tab" data-target="panel-competitors" id="tab-competitors">COMPETITOR COMPARISON</button>
+        <button class="nav-tab" data-target="panel-story" id="tab-story">METHODOLOGY</button>
+        <button class="nav-tab" data-target="panel-logistics" id="tab-logistics" style="color:var(--amber);">LOGISTICS LAB</button>
+        <button class="nav-tab" data-target="panel-attendee" id="tab-attendee" style="color:var(--green);">ATTENDEE PANEL</button>
+      </nav>
+      <div class="header-right">
+        <span class="last-run" id="last-run-time" style="font-size: 10px; color: var(--text-dim); margin-right: 15px; font-family: 'JetBrains Mono', monospace;"></span>
+        <span class="data-status" id="data-status">
+          <span class="status-dot"></span>
+          <span class="status-text">LOADING...</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: TRACK SELECTION
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-track-select" class="page hidden" style="overflow-y: auto;">
+      <div class="track-select-container">
+        <div class="track-select-header slush-display-container">
+          <div class="ribbon-3d"></div>
+          <div class="sticker mint" style="top: -10px; right: 20%;">✧</div>
+          <h2 class="slush-display">SELECT CIRCUIT</h2>
+          <p class="slush-tagline">Choose the circuit and weather conditions for your simulation.</p>
+        </div>
+
+        <!-- Circuit Cards -->
+        <div class="circuit-grid" id="circuit-grid">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Configuration Panel -->
+        <div class="circuit-config-panel">
+          <div class="config-col">
+            <h3>SELECTED CIRCUIT</h3>
+            <div id="ts-selected-name" style="font-size: 1.2rem; font-weight: 700; color: var(--cyan);">---</div>
+            <div id="ts-selected-desc" style="color: var(--text-secondary); margin-bottom: 12px;">Select a circuit above</div>
+          </div>
+          <div class="config-col">
+            <h3>CONDITIONS</h3>
+            <div class="condition-selector" id="condition-selector">
+              <button class="cond-btn active" data-cond="DRY">DRY</button>
+              <button class="cond-btn" data-cond="DAMP">DAMP</button>
+              <button class="cond-btn" data-cond="WET">WET</button>
+            </div>
+          </div>
+          <div class="config-col">
+            <h3>MODEL STATUS</h3>
+            <div id="ts-model-status" style="color: var(--text-secondary);">---</div>
+          </div>
+          <div class="config-col" style="display:flex; align-items:center; justify-content:flex-end;">
+            <button id="btn-confirm-track" class="btn-primary" disabled>PROCEED TO SETUP ➔</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: CAR DESIGN & RACE SETUP
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-car-setup" class="page hidden" style="flex-direction:column; padding: 20px; overflow-y: auto; overflow-x: hidden;">
+      
+      <!-- Top banner for Title and Ruleset -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; z-index: 10;">
+        <div class="track-select-header slush-display-container">
+          <div class="ribbon-3d" style="background: var(--color-voltage-violet);"></div>
+          <div class="sticker ember" style="bottom: 0px; left: -20px;">✦</div>
+          <h2 class="slush-display" style="font-size: 80px;">CAR DESIGN & SETUP</h2>
+          <p class="slush-tagline" id="setup-subtitle">Prepare the car, tyres and race strategy for ---</p>
+        </div>
+        
+        <div class="glass-panel" style="padding: 15px; display: flex; align-items: center; gap: 15px; border: 1px solid rgba(0,229,255,0.3);">
+          <div>
+            <div style="font-size: 0.8rem; color: var(--cyan); margin-bottom: 5px;">RULESET</div>
+            <select id="setup-ruleset" class="sim-select" style="font-size: 1rem; padding: 5px 10px;">
+              <option value="F1_2026_OFFICIAL">OFFICIAL 2026 F1</option>
+              <option value="F1_CLASSIC_REFUELLING">CLASSIC F1</option>
+            </select>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); max-width: 200px;" id="ruleset-desc">
+            No Race Refuelling
+          </div>
+        </div>
+      </div>
+
+      <!-- Main HUD Area -->
+      <div class="setup-hud-container" style="position: relative; flex: 1; min-height: 750px; display: flex; align-items: center; justify-content: center; overflow: visible;">
+        
+        <!-- Center F1 Car SVG Schematic -->
+        <div class="f1-schematic-wrapper" style="position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 625px;">
+          <svg viewBox="0 0 200 500" width="100%" height="100%" style="filter: drop-shadow(0 0 6px var(--cyan));">
+            <!-- Front Wing -->
+            <path d="M 50 40 L 150 40 L 150 65 L 50 65 Z" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            <line x1="80" y1="65" x2="120" y2="65" stroke="var(--cyan)" stroke-width="2"/>
+            <line x1="100" y1="40" x2="100" y2="20" stroke="var(--cyan)" stroke-width="2"/>
+            
+            <!-- Tyres (Front) -->
+            <rect x="35" y="80" width="20" height="50" rx="4" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            <rect x="145" y="80" width="20" height="50" rx="4" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            
+            <!-- Suspension (Front) -->
+            <line x1="55" y1="105" x2="90" y2="120" stroke="var(--cyan)" stroke-width="1.5"/>
+            <line x1="145" y1="105" x2="110" y2="120" stroke="var(--cyan)" stroke-width="1.5"/>
+            
+            <!-- Body/Chassis -->
+            <path d="M 90 65 L 110 65 L 120 180 L 130 250 L 125 380 L 140 430 L 115 470 L 85 470 L 60 430 L 75 380 L 70 250 L 80 180 Z" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            
+            <!-- Cockpit/Halo -->
+            <path d="M 85 200 C 100 180, 115 200, 115 200 L 110 260 L 90 260 Z" stroke="var(--cyan)" fill="none" stroke-width="1.5"/>
+            <path d="M 100 185 L 100 210 M 85 210 C 100 230, 115 210, 115 210" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            
+            <!-- Sidepods -->
+            <path d="M 70 250 L 50 260 L 55 350 L 75 380" stroke="var(--cyan)" fill="none" stroke-width="1.5"/>
+            <path d="M 130 250 L 150 260 L 145 350 L 125 380" stroke="var(--cyan)" fill="none" stroke-width="1.5"/>
+            
+            <!-- Tyres (Rear) -->
+            <rect x="30" y="380" width="25" height="55" rx="4" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            <rect x="145" y="380" width="25" height="55" rx="4" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            
+            <!-- Suspension (Rear) -->
+            <line x1="55" y1="407" x2="80" y2="400" stroke="var(--cyan)" stroke-width="1.5"/>
+            <line x1="145" y1="407" x2="120" y2="400" stroke="var(--cyan)" stroke-width="1.5"/>
+            
+            <!-- Rear Wing -->
+            <path d="M 50 470 L 150 470 L 150 490 L 50 490 Z" stroke="var(--cyan)" fill="none" stroke-width="2"/>
+            <line x1="85" y1="470" x2="85" y2="450" stroke="var(--cyan)" stroke-width="2"/>
+            <line x1="115" y1="470" x2="115" y2="450" stroke="var(--cyan)" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <!-- LEFT SIDE PANELS -->
+        <div style="position: absolute; top: 10%; left: 5%; display: flex; flex-direction: column; gap: 40px; z-index: 2; width: 300px;">
+          
+          <!-- Aerodynamics (Front Wing) -->
+          <div class="hud-panel glass-panel" style="position: relative;">
+            <div class="hud-connector line-right" style="top: 30px; width: calc(50vw - 420px);"></div>
+            <h3 style="color:var(--cyan); border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 5px; margin-bottom: 15px; font-size: 0.9rem;">AERODYNAMICS</h3>
+            <div style="display:flex; flex-direction: column; gap: 10px;">
+              <div>
+                <label style="font-size: 0.7rem;">DOWNFORCE LEVEL</label>
+                <select id="setup-aero-downforce" class="sim-select" style="font-size: 0.85rem; padding: 5px;">
+                  <option value="LOW">LOW</option>
+                  <option value="MEDIUM" selected>MEDIUM (Recommended)</option>
+                  <option value="HIGH">HIGH</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.7rem;">AERO BALANCE</label>
+                <select id="setup-aero-balance" class="sim-select" style="font-size: 0.85rem; padding: 5px;">
+                  <option value="FRONT">FRONT-BIASED</option>
+                  <option value="BALANCED" selected>BALANCED (Recommended)</option>
+                  <option value="REAR">REAR-BIASED</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mechanical (Suspension) -->
+          <div class="hud-panel glass-panel" style="position: relative;">
+            <div class="hud-connector line-right" style="top: 30px; width: calc(50vw - 380px);"></div>
+            <h3 style="color:var(--cyan); border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 5px; margin-bottom: 15px; font-size: 0.9rem;">MECHANICAL & BRAKES</h3>
+            <div style="display:flex; flex-direction: column; gap: 10px;">
+              <div>
+                <label style="font-size: 0.7rem;">MECHANICAL BALANCE</label>
+                <select id="setup-mech-balance" class="sim-select" style="font-size: 0.85rem; padding: 5px;">
+                  <option value="FRONT">FRONT-BIASED</option>
+                  <option value="BALANCED" selected>BALANCED (Recommended)</option>
+                  <option value="REAR">REAR-BIASED</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.7rem;">BRAKE BIAS</label>
+                <select id="setup-brake-bias" class="sim-select" style="font-size: 0.85rem; padding: 5px;">
+                  <option value="FRONT">FRONT</option>
+                  <option value="BALANCED" selected>BALANCED (Recommended)</option>
+                  <option value="REAR">REAR</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tyres -->
+          <div class="hud-panel glass-panel" style="position: relative;">
+            <div class="hud-connector line-right" style="top: 30px; width: calc(50vw - 320px); transform: translateY(40px) rotate(-10deg); transform-origin: left center;"></div>
+            <h3 style="color:var(--cyan); border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 5px; margin-bottom: 15px; font-size: 0.9rem;">TYRES</h3>
+            <div style="display:flex; flex-direction: column; gap: 10px;">
+              <label style="font-size: 0.7rem;">STARTING TYRE</label>
+              <select id="setup-tyre" class="sim-select" style="font-size: 0.85rem; padding: 5px;">
+                <option value="SOFT">SOFT</option>
+                <option value="MEDIUM" selected>MEDIUM (Recommended)</option>
+                <option value="HARD">HARD</option>
+                <option value="INTERMEDIATE">INTERMEDIATE</option>
+                <option value="WET">FULL WET</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT SIDE PANELS -->
+        <div style="position: absolute; top: 15%; right: 5%; display: flex; flex-direction: column; gap: 80px; z-index: 2; width: 300px;">
+          
+          <!-- Fuel (Center Tank) -->
+          <div class="hud-panel glass-panel" style="position: relative;">
+            <div class="hud-connector line-left" style="top: 30px; width: calc(50vw - 380px);"></div>
+            <h3 style="color:var(--cyan); border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 5px; margin-bottom: 15px; font-size: 0.9rem;">FUEL TANK</h3>
+            <label style="font-size: 0.7rem;">STARTING FUEL (<span id="setup-fuel-val">110.0</span> kg)</label>
+            <input type="range" id="setup-fuel" min="70" max="110" step="0.1" value="110" style="width: 100%;">
+            <div style="display:flex; flex-direction: column; font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; gap: 3px;">
+              <span id="setup-fuel-min-label">Minimum to finish: -- kg</span>
+              <span id="setup-fuel-rec-label">Recommended: -- kg</span>
+              <span>Max: 110.0 kg</span>
+            </div>
+          </div>
+
+          <!-- Energy (Engine) -->
+          <div class="hud-panel glass-panel" style="position: relative;">
+            <div class="hud-connector line-left" style="top: 30px; width: calc(50vw - 360px); transform: translateY(-30px) rotate(15deg); transform-origin: right center;"></div>
+            <h3 style="color:var(--cyan); border-bottom: 1px solid rgba(0,229,255,0.2); padding-bottom: 5px; margin-bottom: 15px; font-size: 0.9rem;">ENERGY STRATEGY</h3>
+            <label style="font-size: 0.7rem;">DEPLOYMENT</label>
+            <select id="setup-energy" class="sim-select" style="width: 100%; font-size: 0.85rem; padding: 5px;">
+              <option value="CONSERVATIVE">CONSERVATIVE (High Reserve)</option>
+              <option value="BALANCED" selected>BALANCED (Recommended)</option>
+              <option value="AGGRESSIVE">AGGRESSIVE (Max Deployment)</option>
+            </select>
+          </div>
+          
+        </div>
+
+      </div> <!-- End of setup-hud-container -->
+
+      <!-- BOTTOM PANELS: Legality & Preview -->
+      <div style="display: flex; gap: 20px; padding-top: 20px; margin-top: auto;">
+        <!-- Preview -->
+        <div class="glass-panel" style="padding: 15px; flex: 2;">
+          <h3 style="color:var(--text-primary); margin-bottom: 10px; font-size: 0.8rem;">LIVE PERFORMANCE PREVIEW</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <div class="metric-row" style="margin-bottom: 8px;">
+                <div style="display:flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 3px;">
+                  <span>TOP SPEED</span><span id="preview-speed">--</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; overflow: hidden;">
+                  <div id="preview-speed-bar" style="background: var(--cyan); width: 50%; height: 100%;"></div>
+                </div>
+              </div>
+              <div class="metric-row" style="margin-bottom: 8px;">
+                <div style="display:flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 3px;">
+                  <span>CORNERING GRIP</span><span id="preview-grip">--</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; overflow: hidden;">
+                  <div id="preview-grip-bar" style="background: var(--cyan); width: 50%; height: 100%;"></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="metric-row" style="margin-bottom: 8px;">
+                <div style="display:flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 3px;">
+                  <span>TYRE DEGRADATION</span><span id="preview-wear">--</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; overflow: hidden;">
+                  <div id="preview-wear-bar" style="background: var(--red); width: 50%; height: 100%;"></div>
+                </div>
+              </div>
+              <div class="metric-row" style="margin-bottom: 8px;">
+                <div style="display:flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 3px;">
+                  <span>FUEL EFFICIENCY</span><span id="preview-fuel">--</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; overflow: hidden;">
+                  <div id="preview-fuel-bar" style="background: var(--amber); width: 50%; height: 100%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px;" id="preview-tradeoff">
+            Tradeoff summary...
+          </p>
+        </div>
+
+        <!-- Legality -->
+        <div class="glass-panel" style="padding: 15px; border-top: 3px solid var(--green); flex: 1; display: flex; flex-direction: column;" id="setup-legality-panel">
+          <h3 style="color:var(--green); margin-bottom: 10px; font-size: 0.8rem;" id="setup-legality-title">✓ FIA LEGALITY CHECK</h3>
+          <ul style="list-style: none; padding: 0; font-size: 0.75rem; line-height: 1.5; flex: 1; overflow-y: auto; margin-bottom: 10px;" id="setup-legality-list">
+            <!-- JS Populated -->
+          </ul>
+          <button id="btn-confirm-setup" class="btn-primary" style="font-size: 1rem; padding: 10px; margin-top: auto;">START RACE ➔</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: RACE CONTROL (Simulation)
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-simulation" class="page hidden" style="overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column;">
+      
+      <!-- START SCREEN -->
+      <div id="start-screen" class="sim-overlay-screen active">
+        <div class="start-card">
+          <div class="slush-display-container">
+            <div class="ribbon-3d" style="background: var(--color-sky-wash); opacity: 1;"></div>
+            <div class="sticker sunburst" style="top: 0; left: -10px;">★</div>
+            <h2 class="slush-display" style="font-size: 70px;">RACE CONFIGURATION</h2>
+          </div>
+          <div class="config-grid">
+            <div class="config-item">
+              <span>CIRCUIT</span>
+              <strong id="pre-race-circuit">---</strong>
+            </div>
+            <div class="config-item">
+              <span>CONDITIONS</span>
+              <strong id="pre-race-condition">---</strong>
+            </div>
+            <div class="config-item">
+              <span>RACE DISTANCE</span>
+              <strong id="pre-race-laps">---</strong>
+            </div>
+            <div class="config-item">
+              <span>STARTING TYRE</span>
+              <strong>Medium</strong>
+            </div>
+            <div class="config-item">
+              <span>STARTING POS</span>
+              <select id="grid-position-select" class="track-select">
+                <option value="1">P1</option>
+                <option value="2">P2</option>
+                <option value="3">P3</option>
+                <option value="4">P4</option>
+                <option value="5">P5</option>
+                <option value="6">P6</option>
+                <option value="7">P7</option>
+                <option value="8" selected>P8</option>
+                <option value="9">P9</option>
+                <option value="10">P10</option>
+                <option value="11">P11</option>
+                <option value="12">P12</option>
+                <option value="13">P13</option>
+                <option value="14">P14</option>
+                <option value="15">P15</option>
+                <option value="16">P16</option>
+                <option value="17">P17</option>
+                <option value="18">P18</option>
+                <option value="19">P19</option>
+                <option value="20">P20</option>
+              </select>
+            </div>
+            <div class="config-item">
+              <span>DEMO SCENARIO</span>
+              <select id="scenario-select" class="track-select">
+                <option value="NORMAL">Normal Race</option>
+                <option value="UNDERCUT">Undercut Opportunity</option>
+                <option value="SAFETY_CAR">Safety Car Chaos</option>
+                <option value="HIGH_DEG">High Degradation</option>
+                <option value="FUEL_SAVE">Marginal Fuel</option>
+              </select>
+            </div>
+          </div>
+          <button id="btn-start-race" class="btn-primary">▶ START RACE</button>
+        </div>
+      </div>
+
+      <!-- RACE FINISH SCREEN -->
+      <div id="finish-screen" class="sim-overlay-screen">
+        <div class="finish-card">
+          <h2>🏁 RACE FINISHED</h2>
+          <h1 id="finish-pos">P4</h1>
+          <div class="finish-stats">
+            <div class="stat"><span>STARTING POS</span><strong id="finish-start-pos">P8</strong></div>
+            <div class="stat"><span>POSITIONS GAINED</span><strong id="finish-gained" class="positive">+4</strong></div>
+            <div class="stat"><span>PIT STOPS</span><strong id="finish-stops">2</strong></div>
+            <div class="stat"><span>STRATEGY TIME SAVED</span><strong id="finish-time-saved">+6.8s</strong></div>
+          </div>
+          <div id="finish-what-if"></div>
+          <div class="finish-actions" style="margin-top:20px;">
+            <button id="btn-restart-race" class="btn-secondary">↺ RESTART RACE</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN RACE CONTROL UI -->
+      <div id="race-control-layout" class="rc-layout hidden">
+        
+        <!-- HEADER ROW: Global Status & Controls -->
+        <div class="rc-header">
+          <div class="rc-status-banner" id="rc-status-banner">GREEN FLAG</div>
+          <div id="telemetry-badge" style="margin-left: 16px; font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: rgba(0,229,255,0.1); border: 1px solid var(--cyan); color: var(--cyan); font-weight: bold;">● LIVE TELEMETRY</div>
+          <div class="rc-timeline" id="rc-timeline"></div>
+          <div class="rc-controls">
+            <button class="rc-ctrl-btn" id="ctrl-play-pause">⏸</button>
+            <button class="rc-ctrl-btn" id="ctrl-restart">↺</button>
+            <div class="speed-selector">
+              <button class="spd-btn" data-speed="1">1x</button>
+              <button class="spd-btn active" data-speed="2">2x</button>
+              <button class="spd-btn" data-speed="4">4x</button>
+              <button class="spd-btn" data-speed="8">8x</button>
+              <button class="spd-btn" data-speed="16">16x</button>
+              <button class="spd-btn" data-speed="20">20x</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MIDDLE ROW: Telemetry, Track, Event Feed -->
+        <div class="rc-middle" style="display: grid; grid-template-columns: 350px 1fr 280px; gap: 16px; min-height: 400px;">
+          
+          <div class="rc-panel rc-telemetry" style="display: flex; flex-direction: column; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 12px;">
+              <h3 style="margin: 0; color: var(--cyan);">OUR CAR #11</h3>
+              <div id="rc-live-traffic-status" style="font-size: 0.7rem; font-weight: bold; padding: 2px 6px; border-radius: 3px; background: rgba(255,255,255,0.1);">CLEAN</div>
+            </div>
+
+            <!-- F1 DASHBOARD SPEEDOMETER -->
+            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+              <div style="text-align: center; flex: 1;">
+                <div id="rc-speed-val" style="font-size: 2.5rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1;">---</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 2px;">km/h</div>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;">
+                  <span style="color:var(--text-muted)">GEAR</span><strong id="rc-gear-val">N/A</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;">
+                  <span style="color:var(--text-muted)">DRS</span><strong id="rc-drs-val">OFF</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- BARS -->
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace;">
+                <span style="width: 60px; color: var(--text-muted);">THROTTLE</span>
+                <div style="flex: 1; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin: 0 8px;">
+                  <div id="rc-throttle-bar" style="height: 100%; width: 0%; background: var(--green); transition: width 0.1s;"></div>
+                </div>
+                <span id="rc-throttle-val" style="width: 30px; text-align: right;">0%</span>
+              </div>
+              <div style="display: flex; align-items: center; font-size: 0.7rem; font-family: 'JetBrains Mono', monospace;">
+                <span style="width: 60px; color: var(--text-muted);">BRAKE</span>
+                <div style="flex: 1; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin: 0 8px;">
+                  <div id="rc-brake-bar" style="height: 100%; width: 0%; background: var(--red); transition: width 0.1s;"></div>
+                </div>
+                <span id="rc-brake-val" style="width: 30px; text-align: right;">0%</span>
+              </div>
+            </div>
+
+            <div class="telem-grid" style="margin-bottom: 16px;">
+              <div class="telem-box"><span class="label">LAP</span><span class="val" id="rc-lap">1/61</span></div>
+              <div class="telem-box"><span class="label">POS</span><span class="val" id="rc-pos">P8</span></div>
+              <div class="telem-box"><span class="label">TYRE</span><span class="val" id="rc-tyre">MEDIUM</span></div>
+              <div class="telem-box"><span class="label">AGE</span><span class="val" id="rc-age">1</span></div>
+              <div class="telem-box wide">
+                <span class="label">FUEL</span>
+                <div class="fuel-track"><div class="fuel-fill" id="rc-fuel-bar"></div></div>
+                <span class="val-small" id="rc-fuel-text">110kg (SAFE)</span>
+              </div>
+            </div>
+
+            <!-- SPEED RESIDUAL & TYRE INTELLIGENCE -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
+                <div style="font-size: 0.65rem; color: var(--cyan); margin-bottom: 4px;">SPEED RESIDUAL</div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem;"><span style="color:var(--text-muted)">Actual</span><span id="rc-res-actual">--</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem;"><span style="color:var(--text-muted)">Expected</span><span id="rc-res-expected">--</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 4px;">
+                  <span style="color:var(--text-muted)">Residual</span><strong id="rc-res-val">--</strong>
+                </div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 8px; border-radius: 6px;">
+                <div style="font-size: 0.65rem; color: var(--cyan); margin-bottom: 4px;">TYRE INTELLIGENCE</div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem;"><span style="color:var(--text-muted)">Tyre Temp</span><strong id="rc-tyre-temp" style="color:var(--green)">100°C ✓</strong></div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem;"><span style="color:var(--text-muted)">Lap Stress</span><span id="rc-stress-val">--</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem;"><span style="color:var(--text-muted)">Degradation</span><span id="rc-deg-rate">0.05s/L</span></div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 4px;">
+                  <span style="color:var(--text-muted)">Loss</span><strong id="rc-delta">+0.00s</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- GAPS -->
+            <div class="rc-gaps" style="margin-top: auto;">
+              <div class="gap-row ahead">
+                <span class="gap-car" id="gap-ahead-car">P7 (#4)</span>
+                <span class="gap-time" id="gap-ahead-time">+1.8s</span>
+              </div>
+              <div class="gap-row behind">
+                <span class="gap-car" id="gap-behind-car">P9 (#14)</span>
+                <span class="gap-time" id="gap-behind-time">-2.4s</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rc-panel rc-track" style="position: relative;">
+            <div id="track-canvas-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
+          </div>
+
+          <div class="rc-panel rc-events">
+            <h3>RACE EVENTS</h3>
+            <div class="event-list" id="event-list"></div>
+          </div>
+        </div>
+
+          <!-- Left: Strategy AI & Pit Window -->
+          <div class="rc-merged-left" style="display: flex; gap: var(--space-md); flex: 1;">
+            <div class="rc-panel rc-engineer" style="flex: 1.2; display: flex; flex-direction: column;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <h3 style="margin:0; font-size:0.85rem; font-weight:900; letter-spacing:1px; color:var(--color-carbon);">PRESCRIPTION ENGINE</h3>
+                <span id="rx-conf-badge" class="conf-high" style="font-size:0.62rem; font-weight:800; padding:2px 6px; border-radius:4px; border:1px solid #000; background:var(--color-paper-white);">HIGH CONF</span>
+              </div>
+
+              <!-- Primary Action Badge -->
+              <div class="engineer-call" id="eng-call" style="font-size:1.35rem; font-weight:900; padding:8px 12px; margin-bottom:6px; letter-spacing:0.5px;">STAY OUT</div>
+
+              <!-- Action Directive Subtitle -->
+              <div id="rx-recommended-action" style="font-size:0.82rem; font-weight:800; color:var(--color-carbon); margin-bottom:6px; line-height:1.25;">Continue on Medium for 2 laps</div>
+
+              <!-- Dynamic Reason -->
+              <div id="rx-reason" style="font-size:0.73rem; color:var(--text-secondary); margin-bottom:8px; line-height:1.35; background:var(--color-soft-mist); padding:6px 8px; border-radius:4px; border:1px solid rgba(0,0,0,0.12);">
+                Current tyre degradation remains below the effective pit-loss threshold.
+              </div>
+
+              <!-- 5-Metric Layout -->
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px; font-size:0.72rem;">
+                <div style="background:var(--color-paper-white); border:1px solid rgba(0,0,0,0.15); padding:4px 6px; border-radius:4px;">
+                  <span style="color:var(--text-muted); font-size:0.65rem; display:block; font-weight:700;">PROJECTED GAIN</span>
+                  <strong id="rx-gain" style="color:var(--green); font-size:0.88rem; font-family:var(--font-mono);">+1.8s</strong>
+                </div>
+                <div style="background:var(--color-paper-white); border:1px solid rgba(0,0,0,0.15); padding:4px 6px; border-radius:4px;">
+                  <span style="color:var(--text-muted); font-size:0.65rem; display:block; font-weight:700;">TRAFFIC RISK</span>
+                  <strong id="rx-traffic" style="color:var(--green); font-size:0.88rem;">LOW</strong>
+                </div>
+                <div style="background:var(--color-paper-white); border:1px solid rgba(0,0,0,0.15); padding:4px 6px; border-radius:4px;">
+                  <span style="color:var(--text-muted); font-size:0.65rem; display:block; font-weight:700;">TYRE TEMP</span>
+                  <strong id="rx-temp" style="color:var(--green); font-size:0.88rem;">OPTIMAL</strong>
+                </div>
+                <div style="background:var(--color-paper-white); border:1px solid rgba(0,0,0,0.15); padding:4px 6px; border-radius:4px;">
+                  <span style="color:var(--text-muted); font-size:0.65rem; display:block; font-weight:700;">OPTIMAL PIT</span>
+                  <strong id="rx-opt-pit" style="color:var(--color-carbon); font-size:0.88rem; font-weight:800;">LAP 12</strong>
+                </div>
+              </div>
+              <div style="background:var(--color-paper-white); border:1px solid rgba(0,0,0,0.15); padding:5px 8px; border-radius:4px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-muted); font-size:0.65rem; font-weight:700; letter-spacing:0.5px;">NEXT DECISION</span>
+                <strong id="rx-next-lap" style="color:var(--color-carbon); font-size:0.75rem; font-weight:800; font-family:var(--font-mono);">RE-EVALUATE LAP 6</strong>
+              </div>
+
+              <!-- Alternative Strategy Box -->
+              <div id="rx-alt-box" style="padding:6px 8px; border:1.5px dashed var(--color-carbon); border-radius:5px; background:var(--color-paper-white); margin-top:auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                  <span style="font-size:0.62rem; font-weight:800; color:var(--text-muted); letter-spacing:0.5px;">OR ALTERNATIVE:</span>
+                  <strong id="rx-alt-action" style="font-size:0.75rem; color:var(--color-carbon); font-weight:800;">PIT NOW → HARD</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.68rem; color:var(--text-secondary);">
+                  <span id="rx-alt-reason" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">Fresh tyres eliminate degradation</span>
+                  <span id="rx-alt-gain" style="font-weight:800; color:var(--color-carbon); flex-shrink:0;">+0.9s</span>
+                </div>
+              </div>
+
+              <!-- Hidden backwards compatibility elements -->
+              <div style="display:none;">
+                <span id="eng-opt-lap">LAP --</span>
+                <span id="eng-opt-tyre">--</span>
+                <span id="eng-opt-fuel">+0.0kg</span>
+                <span id="eng-conf">HIGH</span>
+              </div>
+
+              <button id="btn-why" class="btn-outline" style="margin-top: 8px; font-weight:800; font-size:0.72rem; padding:6px 10px;">PRESCRIPTION REASONING & CANDIDATES</button>
+            </div>
+
+            <!-- NEW: WHY WAS THIS LAP SLOWER -->
+            <div class="rc-panel" style="flex: 1; display: flex; flex-direction: column;">
+              <h3 style="color:var(--cyan)">WHY WAS THIS LAP SLOWER?</h3>
+              <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; flex: 1;">
+                <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+                  <span>Base Pace</span><span id="lap-decomp-base">--</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Fuel Effect</span><span id="lap-decomp-fuel" style="color:var(--amber)">--</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Track Evol.</span><span id="lap-decomp-track" style="color:var(--green)">--</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Tyre Degradation</span><span id="lap-decomp-tyre" style="color:var(--red)">--</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Thermal Effect</span><span id="lap-decomp-thermal" style="color:var(--color-ember, #ff5722)">+0.00s</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Traffic Delay</span><span id="lap-decomp-traffic" style="color:#ff00ff">--</span>
+                </div>
+                <div style="height: 1px; background: rgba(0,0,0,0.2); margin: 4px 0;"></div>
+                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 0.85rem; color: #000;">
+                  <span>Observed Time</span><span id="lap-decomp-total">--</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="rc-panel rc-pit" style="flex: 1; display: flex; flex-direction: column;">
+              <h3 style="color:var(--cyan)">MANUAL PIT</h3>
+              <div class="pit-options">
+                <button class="pit-opt" data-pit="SOFT">S</button>
+                <button class="pit-opt active" data-pit="MEDIUM">M</button>
+                <button class="pit-opt" data-pit="HARD">H</button>
+              </div>
+              <div class="pit-loss-info" style="margin-top:auto; margin-bottom: 10px;">
+                <span>Expected Pit Loss:</span>
+                <strong id="pit-loss-val">28.0s</strong>
+              </div>
+              <button class="btn-pit-now" id="btn-manual-pit">PIT THIS LAP</button>
+            </div>
+          </div>
+
+          <!-- Right: Live Speed Trace & Lap History -->
+          <div style="flex: 1.5; display: flex; flex-direction: column; gap: var(--space-md);">
+
+            
+            <!-- LAP HISTORY -->
+            <div class="rc-panel rc-lap-history" style="flex: 1; display: flex; flex-direction: column; padding: 12px; min-height: 240px;">
+              <h3 style="margin:0 0 8px 0; font-size:0.8rem; color:var(--text-muted);">LAP HISTORY</h3>
+              <div class="lap-history-table-container" style="overflow-y: auto; flex: 1; min-height: 180px; max-height: 260px; padding-right: 4px;">
+                <table style="width: 100%; text-align: left; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.75rem;">
+                  <thead style="position: sticky; top: 0; background: var(--bg-glass); z-index: 2;">
+                    <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted);">
+                      <th style="padding: 4px;">LAP</th>
+                      <th style="padding: 4px;">POS</th>
+                      <th style="padding: 4px;">TYRE DEG</th>
+                      <th style="padding: 4px;">LAP TIME</th>
+                    </tr>
+                  </thead>
+                  <tbody id="lap-history-body">
+                    <!-- Rows added dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      
+      <!-- RACE CONTROL CHARTS NAV -->
+      <div id="rc-charts-container" style="padding: 0 40px; margin-top: 32px; display: flex; flex-direction: column; flex: 1 1 auto;">
+<div class="research-sub-nav" style="margin-bottom: 24px;">
+          <button class="sub-nav-btn active" data-target="rc-panel-lap-chart">POSITION</button>
+          <button class="sub-nav-btn" data-target="rc-panel-tire-strategy">TIRE STRATEGY</button>
+          <button class="sub-nav-btn" data-target="rc-panel-fastest-laps">FASTEST LAPS</button>
+          <button class="sub-nav-btn" data-target="rc-panel-pit-stops">PIT STOPS</button>
+          <button class="sub-nav-btn" data-target="rc-panel-weather">WEATHER</button>
+          <button class="sub-nav-btn" data-target="rc-panel-penalties">PENALTIES</button>
+        </div>
+
+        <!-- LAP CHART PANEL -->
+        <div id="rc-panel-lap-chart" class="sub-panel active">
+          <div class="rc-panel" style="height: 500px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 12px; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--cyan); font-family: var(--font-display); letter-spacing: 2px;">LIVE POSITION CHART</h3>
+            <div style="flex: 1; min-height: 0; position: relative;">
+              <canvas id="chart-lap-history"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <!-- TIRE STRATEGY PANEL (Contains the research page) -->
+        <div id="rc-panel-tire-strategy" class="sub-panel">
+
+<div class="research-page">
+        <!-- Sub-navigation -->
+        <div class="research-sub-nav">
+          <button class="sub-nav-btn active" data-target="sub-ghost-baseline">GHOST BASELINE</button>
+          <button class="sub-nav-btn" data-target="sub-tyre-overview">TYRE OVERVIEW</button>
+          <button class="sub-nav-btn" data-target="sub-compare">COMPARE</button>
+          <button class="sub-nav-btn" data-target="sub-investigate">INVESTIGATE</button>
+        </div>
+
+        <!-- ── Sub: Ghost Baseline ── -->
+        <div id="sub-ghost-baseline" class="sub-panel active">
+          
+          <!-- LIVE SIMULATION BANNER -->
+          <div id="live-sim-banner-ghost" class="live-sim-banner hidden" style="margin-bottom:16px; padding:12px; background:rgba(0,229,255,0.05); border:1px solid rgba(0,229,255,0.2); border-radius:8px;">
+            <div style="font-size:0.75rem; color:var(--cyan); font-weight:bold; letter-spacing:1px; margin-bottom:8px;">LIVE SIMULATION CONNECTED</div>
+            <div style="display:flex; gap:24px;">
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">LAP:</span> <strong id="live-ghost-lap" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">TYRE:</span> <strong id="live-ghost-tyre" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">AGE:</span> <strong id="live-ghost-age" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">MODEL TYRE LOSS:</span> <strong id="live-ghost-loss" style="color:#ff1744;">--</strong></div>
+            </div>
+          </div>
+
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">
+            Ghost Baseline <span class="data-label data-label-estimated">ESTIMATED</span>
+          </h2>
+          <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:16px;">
+            Observed lap time vs model-estimated counterfactual baseline. The shaded area represents estimated tyre-induced pace loss.
+          </p>
+
+          <div class="why-it-matters">
+            <div class="why-it-matters-header"><span>💡</span><h4>Why It Matters</h4></div>
+            <p>Raw lap time combines fuel burn, track evolution, and tyre degradation. The Ghost Baseline strips away the confounders, revealing the tyre-specific contribution to pace.</p>
+          </div>
+
+          <!-- ── Fuel-Prior Sensitivity Slider ── -->
+          <div class="fuel-prior-slider-panel" id="fuel-prior-panel">
+            <div class="fuel-prior-header">
+              <div class="fuel-prior-title">
+                <span class="fuel-prior-icon">⛽</span>
+                <h3>FUEL ASSUMPTION</h3>
+                <span class="data-label data-label-assumed">ASSUMED</span>
+              </div>
+              <div class="fuel-prior-value-display">
+                <span id="fuel-prior-value" class="fuel-prior-value">0.05</span>
+                <span class="fuel-prior-unit">s/kg</span>
+              </div>
+            </div>
+            <div class="fuel-prior-slider-wrap">
+              <div class="fuel-prior-label-row">
+                <span class="fuel-prior-bound">0.03 s/kg</span>
+                <span class="fuel-prior-hint">Drag to see the Ghost Baseline update instantly</span>
+                <span class="fuel-prior-bound">0.08 s/kg</span>
+              </div>
+              <input type="range" id="fuel-prior-slider" 
+                     min="0.03" max="0.08" step="0.01" value="0.05"
+                     class="fuel-prior-range" />
+              <div class="fuel-prior-ticks">
+                <span data-val="0.03">0.03</span>
+                <span data-val="0.04">0.04</span>
+                <span data-val="0.05" class="tick-default">0.05</span>
+                <span data-val="0.06">0.06</span>
+                <span data-val="0.07">0.07</span>
+                <span data-val="0.08">0.08</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ghost Baseline Chart -->
+          <div class="research-chart-panel">
+            <h3>Observed vs Ghost Baseline (MEDIUM) <span class="data-label data-label-observed">OBSERVED</span></h3>
+            <p class="chart-subtitle">Ghost Baseline = Model-estimated counterfactual pace under controlled conditions. This is NOT physical rubber wear — it is the estimated tyre contribution to lap time.</p>
+            <div style="height:320px;"><canvas id="chart-ghost-baseline"></canvas></div>
+            <p class="chart-interpretation">The gap between the white (observed) and cyan (ghost baseline) lines is the estimated tyre-induced pace loss. Positive gap = tyre losing performance.</p>
+          </div>
+
+
+          <!-- Show Math -->
+          <button id="btn-show-math" style="background:rgba(255,255,255,0.05);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 16px;color:var(--text-secondary);cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;margin:16px 0;width:100%;text-align:left;">
+            ▶ Show mathematical details
+          </button>
+          <div id="math-panel" class="sub-panel" style="margin-bottom:16px;">
+            <div class="glass-panel" id="math-content"></div>
+          </div>
+
+          <!-- Lap Attribution Table -->
+          <div class="research-chart-panel">
+            <h3>Lap-by-Lap Attribution <span class="data-label data-label-model">MODEL-DERIVED</span></h3>
+            <p class="chart-subtitle">Per-lap breakdown showing the estimated contribution of each factor.</p>
+            <div style="max-height:300px;overflow-y:auto;">
+              <table class="attribution-table">
+                <thead>
+                  <tr>
+                    <th>Lap</th>
+                    <th>Tyre Age</th>
+                    <th>Observed <span class="data-label data-label-observed">OBS</span></th>
+                    <th>Ghost Baseline <span class="data-label data-label-estimated">EST</span></th>
+                    <th>Tyre Loss</th>
+                    <th>Fuel Effect <span class="data-label data-label-assumed">ASM</span></th>
+                    <th>Track Evol</th>
+                    <th>Residual</th>
+                  </tr>
+                </thead>
+                <tbody id="attribution-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Sub: Tyre Overview ── -->
+        <div id="sub-tyre-overview" class="sub-panel">
+          
+          <!-- LIVE SIMULATION BANNER -->
+          <div id="live-sim-banner-intel" class="live-sim-banner hidden" style="margin-bottom:16px; padding:12px; background:rgba(0,229,255,0.05); border:1px solid rgba(0,229,255,0.2); border-radius:8px;">
+            <div style="font-size:0.75rem; color:var(--cyan); font-weight:bold; letter-spacing:1px; margin-bottom:8px;">LIVE SIMULATION CONNECTED</div>
+            <div style="display:flex; gap:24px;">
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">LAP:</span> <strong id="live-intel-lap" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">TYRE:</span> <strong id="live-intel-tyre" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">AGE:</span> <strong id="live-intel-age" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">FUEL:</span> <strong id="live-intel-fuel" style="color:var(--text-primary);">--</strong></div>
+            </div>
+          </div>
+
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">
+            Tyre Intelligence <span class="data-label data-label-estimated">ESTIMATED</span>
+          </h2>
+          <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">
+            Estimated tyre-induced pace loss extracted from the model. These values come from the 7-step degradation isolation pipeline.
+          </p>
+
+          <div class="why-it-matters">
+            <div class="why-it-matters-header"><span>💡</span><h4>Why It Matters</h4></div>
+            <p>Raw lap time cannot directly tell us tyre degradation because fuel burn can offset tyre performance loss. This page shows the isolated tyre signal for each compound.</p>
+          </div>
+
+          <!-- Methodology Pipeline -->
+          <div class="pipeline-container">
+            <div class="pipeline-steps">
+              <div class="pipeline-step active" data-step="0">OBSERVE</div>
+              <div class="pipeline-step" data-step="1">CLEAN</div>
+              <div class="pipeline-step" data-step="2">TRACK EVOL</div>
+              <div class="pipeline-step" data-step="3">FUEL SEP</div>
+              <div class="pipeline-step" data-step="4">ANOMALY</div>
+              <div class="pipeline-step" data-step="5">TYRE FIT</div>
+              <div class="pipeline-step" data-step="6">VALIDATE</div>
+            </div>
+            <div class="pipeline-detail" id="pipeline-detail"></div>
+          </div>
+
+          <!-- Compound Cards -->
+          <div id="intel-overview" style="display:flex;flex-direction:column;gap:16px;margin-top:24px;"></div>
+        </div>
+
+        <!-- ── Sub: Compare ── -->
+        <div id="sub-compare" class="sub-panel">
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">
+            Compare Compounds <span class="data-label data-label-estimated">ESTIMATED</span>
+          </h2>
+          <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px;">
+            Side-by-side comparison of estimated tyre-induced pace loss across compounds.
+          </p>
+          <div id="compare-content"></div>
+          <div class="research-chart-panel">
+            <h3>Overlay: Estimated Pace Loss by Compound</h3>
+            <div style="height:300px;"><canvas id="chart-compare"></canvas></div>
+          </div>
+        </div>
+
+        <!-- ── Sub: Investigate ── -->
+        <div id="sub-investigate" class="sub-panel">
+          <!-- LIVE SIMULATION BANNER -->
+          <div id="live-sim-banner-investigate" class="live-sim-banner hidden" style="margin-bottom:16px; padding:12px; background:rgba(0,229,255,0.05); border:1px solid rgba(0,229,255,0.2); border-radius:8px;">
+            <div style="font-size:0.75rem; color:var(--cyan); font-weight:bold; letter-spacing:1px; margin-bottom:8px;">LIVE SIMULATION CONNECTED</div>
+            <div style="display:flex; gap:24px;">
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">RACE STATUS:</span> <strong id="live-inv-status" style="color:var(--text-primary);">--</strong></div>
+              <div><span style="color:var(--text-muted); font-size:0.8rem;">AI RECOMMENDATION:</span> <strong id="live-inv-rec" style="color:var(--text-primary);">--</strong></div>
+            </div>
+          </div>
+
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:16px;">Investigate</h2>
+          <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:16px;">
+            Question-driven analysis. Select a question to explore.
+          </p>
+          <div class="investigate-questions">
+            <button class="investigate-q-btn" data-question="1">Is tyre degradation significant?</button>
+            <button class="investigate-q-btn" data-question="2">Why did pace change?</button>
+            <button class="investigate-q-btn" data-question="3">How uncertain is the estimate?</button>
+          </div>
+          <div id="investigate-answer"></div>
+        </div>
+      </div>
+      </div>
+<!-- WHY MODAL -->
+      <div id="why-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div class="slush-display-container" style="margin-bottom: 0;">
+              <div class="ribbon-3d" style="background: var(--color-mint-pop); height: 40px; top: 10px;"></div>
+              <h2 class="slush-display" style="font-size: 40px;">AI REASONING</h2>
+            </div>
+            <button id="btn-close-why" class="btn-close">×</button>
+          </div>
+          <div class="modal-body" id="why-content"></div>
+        </div>
+      </div>
+    
+        <!-- FASTEST LAPS PANEL -->
+        <div id="rc-panel-fastest-laps" class="sub-panel">
+          <div class="rc-panel" style="height: 500px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 12px; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--cyan); font-family: var(--font-display); letter-spacing: 2px;">FASTEST LAPS</h3>
+            <div style="flex: 1; min-height: 0; position: relative;">
+              <canvas id="chart-fastest-laps"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PIT STOPS PANEL -->
+        <div id="rc-panel-pit-stops" class="sub-panel">
+          <div class="rc-panel" style="height: 500px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 12px; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--cyan); font-family: var(--font-display); letter-spacing: 2px;">PIT STOP HISTORY</h3>
+            <div style="flex: 1; min-height: 0; position: relative;">
+              <canvas id="chart-pit-stops"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- WEATHER PANEL -->
+        <div id="rc-panel-weather" class="sub-panel">
+          <div class="rc-panel" style="height: 500px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 12px; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--cyan); font-family: var(--font-display); letter-spacing: 2px;">WEATHER CONDITIONS</h3>
+            <div style="flex: 1; min-height: 0; position: relative;">
+              <canvas id="chart-weather"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PENALTIES PANEL -->
+        <div id="rc-panel-penalties" class="sub-panel">
+          <div class="rc-panel" style="height: 500px; display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--border-medium); border-radius: 12px; padding: 24px;">
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--cyan); font-family: var(--font-display); letter-spacing: 2px;">PENALTIES LOG</h3>
+            <div id="penalties-list" style="flex: 1; min-height: 0; position: relative; overflow-y: auto;">
+              <table class="attribution-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Lap</th>
+                    <th>Driver</th>
+                    <th>Penalty</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="penalties-tbody">
+                  <!-- JS populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
+        
+        <!-- CAR FILTER BAR -->
+        <div id="car-filter-bar" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-subtle);">
+          <span style="color: var(--text-muted); font-size: 0.8rem; display: flex; align-items: center; margin-right: 8px;">FILTER:</span>
+          <!-- populated dynamically -->
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: COMPETITOR COMPARISON
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-competitors" class="page hidden" style="flex-direction:column;">
+      <div class="research-page" style="max-width: 1200px;">
+        <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px;">Live Competitor Comparison</h2>
+        <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:16px;">
+          Live overview of all cars on track, comparing tyre age, pace loss, and pit recommendations.
+        </p>
+
+        <div class="glass-panel" style="overflow-x:auto;">
+          <table class="attribution-table" style="width: 100%; text-align: left;">
+            <thead>
+              <tr>
+                <th>POS</th>
+                <th>CAR</th>
+                <th>COMPOUND</th>
+                <th>TYRE AGE</th>
+                <th>PACE LOSS (Est)</th>
+                <th>AI RECOMMENDATION</th>
+                <th>UNDERCUT / OVERTAKE</th>
+              </tr>
+            </thead>
+            <tbody id="competitors-table-body">
+              <tr>
+                <td colspan="7" style="text-align:center; padding: 20px; color: var(--text-muted);">
+                  Waiting for simulation to start...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: RESEARCH STORY
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-story" class="page active" style="flex-direction:column;">
+      <div class="research-page" style="max-width:1000px;">
+        <div class="story-container">
+          <!-- Progress -->
+          <div class="story-progress">
+            <div class="story-progress-bar filled"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+            <div class="story-progress-bar"></div>
+          </div>
+          <!-- Content -->
+          <div id="story-content"></div>
+        </div>
+        <!-- Navigation -->
+        <div class="story-nav">
+          <button id="story-prev" class="story-nav-btn story-nav-prev" disabled>← Previous</button>
+          <button id="story-next" class="story-nav-btn story-nav-next">Next →</button>
+        </div>
+      </div>
+    </main>
+
+
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: LOGISTICS LAB
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-logistics" class="page hidden" style="flex-direction:column; padding: 24px; overflow-y: auto;">
+      <div class="logistics-page" style="max-width:1200px; margin: 0 auto; width: 100%;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; gap: 16px;">
+          <div style="flex: 1;">
+            <h2 style="font-size: 1.5rem; color: var(--amber); margin-bottom: 8px;">LOGISTICS LAB (INDIA)</h2>
+            <p style="color: var(--text-secondary); max-width: 600px;">
+              Scaling LME deconvolution from F1 to commercial logistics. Predicting catastrophic commercial tyre blowouts on the Jaipur → Delhi route (280 km) by isolating payload and tarmac temperature effects.
+            </p>
+          </div>
+          <div id="logistics-oracle-card" class="glass-panel" style="border-left: 4px solid var(--amber); min-width: 160px; text-align: center;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; letter-spacing: 1px;">NET ROUTE SAFETY</div>
+            <div id="logistics-status-text" style="font-size: 1.4rem; font-weight: 700; color: var(--green);">SAFE</div>
+            <div id="logistics-distance-text" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">Est. Failure: 450 km</div>
+          </div>
+          <div id="logistics-survival-card" class="glass-panel" style="border-left: 4px solid var(--cyan); min-width: 160px; text-align: center;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; letter-spacing: 1px;">SURVIVAL PROB</div>
+            <div id="survival-value" style="font-size: 1.4rem; font-weight: 700; color: var(--cyan);">—</div>
+            <div id="survival-subtext" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">At Route End (280km)</div>
+          </div>
+          <div id="logistics-energy-card" class="glass-panel" style="border-left: 4px solid var(--amber); min-width: 160px; text-align: center;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; letter-spacing: 1px;">DEPRECIATION RISK</div>
+            <div id="depreciation-value" style="font-size: 1.4rem; font-weight: 700; color: var(--amber);">—</div>
+            <div id="depreciation-subtext" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">Expected capital loss</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 300px 1fr; gap: 24px;">
+          
+          <!-- Controls -->
+          <div class="glass-panel" style="display: flex; flex-direction: column; gap: 24px;">
+            <h3 style="font-size: 1rem; border-bottom: 1px solid rgba(255,193,7,0.2); padding-bottom: 8px; color: var(--amber);">Variables</h3>
+            
+            <!-- Payload -->
+            <div class="slider-container">
+              <div class="slider-header">
+                <label>Payload (Static Load)</label>
+                <span class="slider-value" id="val-payload">20 Tons</span>
+              </div>
+              <input type="range" id="slider-payload" min="10" max="45" step="1" value="20" class="sim-slider amber-slider">
+              <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-top:4px;">
+                <span>10T (Empty)</span>
+                <span>45T (Severe Overload)</span>
+              </div>
+            </div>
+
+            <!-- Tarmac Temp -->
+            <div class="slider-container">
+              <div class="slider-header">
+                <label>Time of Day (Tarmac Temp)</label>
+                <span class="slider-value" id="val-temp">10:00 (35°C)</span>
+              </div>
+              <input type="range" id="slider-temp" min="20" max="60" step="1" value="35" class="sim-slider amber-slider">
+              <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-top:4px;">
+                <span>Night (20°C)</span>
+                <span>Noon (60°C)</span>
+              </div>
+            </div>
+
+            <!-- Rubber Quality -->
+            <div class="slider-container">
+              <label style="display: block; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-secondary);">Rubber Quality</label>
+              <select id="select-rubber" class="sim-select" style="width: 100%; border-color: rgba(255,193,7,0.3);">
+                <option value="VIRGIN">Virgin Rubber (Premium)</option>
+                <option value="RETREAD">Retread Rubber (Budget)</option>
+              </select>
+            </div>
+            
+            <!-- Cooldown Strategy -->
+            <div class="slider-container" style="margin-top: 10px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
+              <label style="display: flex; align-items: center; cursor: pointer; font-size: 0.85rem; color: var(--text-secondary);">
+                <input type="checkbox" id="toggle-cooldown" style="margin-right: 10px; width: 16px; height: 16px; accent-color: var(--cyan);">
+                Apply 35-min Thermal Reset at Midway Hub (140 km)
+              </label>
+            </div>
+          </div>
+
+          <!-- Chart & Minimap -->
+          <div class="glass-panel" style="display: flex; flex-direction: column;">
+            <h3 style="font-size: 1rem; color: var(--amber); margin-bottom: 16px;">The Red Zone: Distance vs Heat Index</h3>
+            
+            <div style="flex: 1; min-height: 400px; position: relative;">
+              <canvas id="chart-logistics"></canvas>
+            </div>
+
+            <!-- Route Minimap -->
+            <div style="margin-top: 24px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px;">
+                <span>Jaipur (0 km)</span>
+                <span id="minimap-status">Destination: Delhi (280 km)</span>
+              </div>
+              <div id="route-minimap" style="height: 12px; background: rgba(255,255,255,0.05); border-radius: 6px; position: relative; overflow: hidden;">
+                <div id="minimap-progress" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background: linear-gradient(90deg, var(--green) 0%, var(--green) 100%); transition: background 0.3s;"></div>
+                <div style="position: absolute; top: 0; left: 100%; width: 2px; height: 100%; background: white; transform: translateX(-1px); box-shadow: 0 0 4px white;"></div>
+              </div>
+            </div>
+
+            <!-- AI Recommendation Panel -->
+            <div id="logistics-recommendation" style="margin-top: 20px; padding: 16px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); display: none;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-size: 1.1rem;">🤖</span>
+                <span style="font-size: 0.85rem; font-weight: 700; color: var(--amber); letter-spacing: 1px;">AI RECOMMENDATION</span>
+              </div>
+              <div id="logistics-recommendation-text" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Traceability Ledger -->
+        <div class="glass-panel" style="margin-top: 24px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="font-size: 0.7rem; background: rgba(255,193,7,0.15); color: var(--amber); padding: 2px 8px; border-radius: 4px; font-weight: 700; letter-spacing: 1px;">LIVE</span>
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 1px;">SUPPLY CHAIN TRACEABILITY LEDGER</span>
+          </div>
+          <div id="traceability-ledger" style="font-family: var(--font-mono); font-size: 0.75rem; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 12px 16px; max-height: 160px; overflow-y: auto; line-height: 1.8; color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.05);">
+            <div style="color: var(--text-muted);">Awaiting telemetry data...</div>
+          </div>
+        </div>
+
+        <!-- Fleet Scaling Projector -->
+        <div class="glass-panel" style="margin-top: 24px; padding: 20px; border: 1px solid rgba(255,193,7,0.15);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.1rem;">📊</span>
+              <span style="font-size: 0.85rem; font-weight: 700; color: var(--amber); letter-spacing: 1px;">FLEET SCALING PROJECTOR</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label style="font-size: 0.8rem; color: var(--text-secondary);">Fleet Size:</label>
+              <input type="number" id="fleet-size-input" value="500" min="1" max="10000" style="width: 80px; padding: 4px 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,193,7,0.3); border-radius: 4px; color: var(--amber); font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700; text-align: center;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">trucks</span>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+            <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 1px;">EXPECTED BLOWOUTS / YEAR</div>
+              <div id="fleet-blowouts" style="font-size: 1.6rem; font-weight: 700; color: var(--amber);">—</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 1px;">TOTAL RISK EXPOSURE (TYRES + CARGO)</div>
+              <div id="fleet-savings" style="font-size: 1.6rem; font-weight: 700; color: var(--green);">—</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 1px;">LIVES AT RISK / YEAR</div>
+              <div id="fleet-lives" style="font-size: 1.6rem; font-weight: 700; color: var(--red);">—</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+
+    <!-- ═══════════════════════════════════════════════════════════
+         PAGE: ATTENDEE PANEL (Audience Race Viewer)
+         ═══════════════════════════════════════════════════════════ -->
+    <main id="page-attendee" class="page hidden" style="flex-direction:column; padding: 24px; overflow-y: auto;">
+      <div class="attendee-page" style="max-width:1400px; margin: 0 auto; width: 100%;">
+
+        <!-- Header Row -->
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:14px;">
+          <div>
+            <h2 style="font-size:1.5rem; color:var(--green); margin-bottom:4px; display:flex; align-items:center; gap:10px;">
+              <span style="font-size:1.2rem;">👁</span> ATTENDEE PANEL
+              <span id="attendee-status-banner" class="attendee-status-pill attendee-status-grid">WAITING FOR DATA</span>
+            </h2>
+            <p style="font-size:0.8rem; color:var(--text-secondary); margin:0;">
+              Live audience dashboard — read-only race monitor. Select up to 2 cars to compare side-by-side.
+            </p>
+          </div>
+
+          <!-- Car Selection Controls & Active Chips -->
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div id="attendee-selected-chips" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;"></div>
+            <div class="glass-panel" style="padding:6px 12px; display:flex; align-items:center; gap:10px; border:2px solid var(--color-carbon); border-radius:var(--radius-sm); background:var(--color-paper-white);">
+              <label style="font-size:0.75rem; color:var(--color-carbon); letter-spacing:1px; font-weight:800;">SELECT CAR</label>
+              <select id="attendee-car-select" style="background:var(--color-paper-white); border:1.5px solid var(--color-carbon); color:var(--color-carbon); padding:6px 12px; border-radius:6px; font-family:var(--font-mono); font-size:0.85rem; font-weight:600; min-width:210px; cursor:pointer;">
+                <option value="">Loading cars...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Cars Comparison Container (1 Car or 2 Equal 50/50 Columns) -->
+        <div id="attendee-cars-container" style="display:grid; grid-template-columns:1fr; gap:20px; margin-bottom:24px;">
+          <!-- Dynamically populated with Car 1 and Car 2 cards by attendeePanel.js -->
+        </div>
+
+        <!-- Enlarged Live Track Simulation (Positioned Below Comparison) -->
+        <div id="attendee-track-section" class="glass-panel" style="padding:18px; border:2px solid var(--color-carbon); border-radius:var(--radius-md); background:var(--color-paper-white); margin-bottom:30px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; border-bottom:2px solid var(--color-concrete-gray); padding-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:1.2rem;">🏎</span>
+              <span style="font-size:0.9rem; font-weight:800; color:var(--color-carbon); letter-spacing:1px;">LIVE TRACK SIMULATION</span>
+              <span id="attendee-track-name" style="font-size:0.75rem; padding:3px 10px; border:1.5px solid var(--color-carbon); border-radius:20px; font-weight:700; background:var(--color-soft-mist); color:var(--color-carbon); text-transform:uppercase;">CIRCUIT</span>
+            </div>
+            <!-- Track Legend indicating highlighted selected cars -->
+            <div id="attendee-track-legend" style="display:flex; align-items:center; gap:16px; font-size:0.78rem; font-weight:700; flex-wrap:wrap;">
+              <!-- Populated dynamically: Car 1, Car 2, Other cars -->
+            </div>
+          </div>
+          <!-- Full-width tall simulation track -->
+          <div id="attendee-mini-track" style="width:100%; height:520px; min-height:480px; position:relative; overflow:hidden;"></div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,1596 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "f1_lme_beta_reference": 0.042,
+    "financial_constants": {
+      "tyre_cost_inr": 15000,
+      "cargo_risk_inr": 1500000
+    }
+  },
+  "grid": {
+    "Virgin_10000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.043,
+        "steady_state_temp_c": 35.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.015,
+        "survival_probability_at_280km": 0.9937,
+        "expected_depreciation_inr": 24388.0
+      }
+    },
+    "Retread_10000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.049,
+        "steady_state_temp_c": 37.2
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.038,
+        "survival_probability_at_280km": 0.9847,
+        "expected_depreciation_inr": 37880.0
+      }
+    },
+    "Virgin_10000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.043,
+        "steady_state_temp_c": 40.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.022,
+        "survival_probability_at_280km": 0.9909,
+        "expected_depreciation_inr": 28614.0
+      }
+    },
+    "Retread_10000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.049,
+        "steady_state_temp_c": 42.2
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.055,
+        "survival_probability_at_280km": 0.9779,
+        "expected_depreciation_inr": 48110.0
+      }
+    },
+    "Virgin_10000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.043,
+        "steady_state_temp_c": 45.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.033,
+        "survival_probability_at_280km": 0.9868,
+        "expected_depreciation_inr": 34729.0
+      }
+    },
+    "Retread_10000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.049,
+        "steady_state_temp_c": 47.2
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.08,
+        "survival_probability_at_280km": 0.9681,
+        "expected_depreciation_inr": 62840.0
+      }
+    },
+    "Virgin_10000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.043,
+        "steady_state_temp_c": 50.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.047,
+        "survival_probability_at_280km": 0.981,
+        "expected_depreciation_inr": 43564.0
+      }
+    },
+    "Retread_10000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.049,
+        "steady_state_temp_c": 52.2
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.116,
+        "survival_probability_at_280km": 0.954,
+        "expected_depreciation_inr": 83967.0
+      }
+    },
+    "Virgin_10000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.043,
+        "steady_state_temp_c": 55.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.069,
+        "survival_probability_at_280km": 0.9725,
+        "expected_depreciation_inr": 56300.0
+      }
+    },
+    "Retread_10000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.049,
+        "steady_state_temp_c": 57.2
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.168,
+        "survival_probability_at_280km": 0.9339,
+        "expected_depreciation_inr": 114101.0
+      }
+    },
+    "Virgin_10000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.043,
+        "steady_state_temp_c": 60.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.1,
+        "survival_probability_at_280km": 0.9603,
+        "expected_depreciation_inr": 74599.0
+      }
+    },
+    "Retread_10000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.049,
+        "steady_state_temp_c": 62.2
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.244,
+        "survival_probability_at_280km": 0.9055,
+        "expected_depreciation_inr": 156734.0
+      }
+    },
+    "Virgin_10000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.043,
+        "steady_state_temp_c": 65.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.145,
+        "survival_probability_at_280km": 0.9428,
+        "expected_depreciation_inr": 100763.0
+      }
+    },
+    "Retread_10000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.049,
+        "steady_state_temp_c": 67.2
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.354,
+        "survival_probability_at_280km": 0.8658,
+        "expected_depreciation_inr": 216343.0
+      }
+    },
+    "Virgin_10000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.043,
+        "steady_state_temp_c": 70.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.21,
+        "survival_probability_at_280km": 0.9181,
+        "expected_depreciation_inr": 137914.0
+      }
+    },
+    "Retread_10000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.049,
+        "steady_state_temp_c": 72.2
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.514,
+        "survival_probability_at_280km": 0.8111,
+        "expected_depreciation_inr": 298279.0
+      }
+    },
+    "Virgin_10000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.043,
+        "steady_state_temp_c": 75.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.305,
+        "survival_probability_at_280km": 0.8832,
+        "expected_depreciation_inr": 190132.0
+      }
+    },
+    "Retread_10000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.049,
+        "steady_state_temp_c": 77.2
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.747,
+        "survival_probability_at_280km": 0.7379,
+        "expected_depreciation_inr": 408145.0
+      }
+    },
+    "Virgin_15000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.064,
+        "steady_state_temp_c": 42.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.029,
+        "survival_probability_at_280km": 0.9881,
+        "expected_depreciation_inr": 32812.0
+      }
+    },
+    "Retread_15000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.074,
+        "steady_state_temp_c": 45.9
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.072,
+        "survival_probability_at_280km": 0.9712,
+        "expected_depreciation_inr": 58233.0
+      }
+    },
+    "Virgin_15000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.064,
+        "steady_state_temp_c": 47.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.043,
+        "survival_probability_at_280km": 0.9828,
+        "expected_depreciation_inr": 40797.0
+      }
+    },
+    "Retread_15000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.074,
+        "steady_state_temp_c": 50.9
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.104,
+        "survival_probability_at_280km": 0.9584,
+        "expected_depreciation_inr": 77370.0
+      }
+    },
+    "Virgin_15000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.064,
+        "steady_state_temp_c": 52.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.062,
+        "survival_probability_at_280km": 0.9751,
+        "expected_depreciation_inr": 52315.0
+      }
+    },
+    "Retread_15000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.074,
+        "steady_state_temp_c": 55.9
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.152,
+        "survival_probability_at_280km": 0.9402,
+        "expected_depreciation_inr": 104712.0
+      }
+    },
+    "Virgin_15000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.064,
+        "steady_state_temp_c": 57.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.09,
+        "survival_probability_at_280km": 0.9641,
+        "expected_depreciation_inr": 68880.0
+      }
+    },
+    "Retread_15000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.074,
+        "steady_state_temp_c": 60.9
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.22,
+        "survival_probability_at_280km": 0.9143,
+        "expected_depreciation_inr": 143495.0
+      }
+    },
+    "Virgin_15000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.064,
+        "steady_state_temp_c": 62.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.131,
+        "survival_probability_at_280km": 0.9483,
+        "expected_depreciation_inr": 92603.0
+      }
+    },
+    "Retread_15000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.074,
+        "steady_state_temp_c": 65.9
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.32,
+        "survival_probability_at_280km": 0.8781,
+        "expected_depreciation_inr": 197922.0
+      }
+    },
+    "Virgin_15000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.064,
+        "steady_state_temp_c": 67.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.19,
+        "survival_probability_at_280km": 0.9258,
+        "expected_depreciation_inr": 126360.0
+      }
+    },
+    "Retread_15000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.074,
+        "steady_state_temp_c": 70.9
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.464,
+        "survival_probability_at_280km": 0.8279,
+        "expected_depreciation_inr": 273135.0
+      }
+    },
+    "Virgin_15000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.064,
+        "steady_state_temp_c": 72.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.275,
+        "survival_probability_at_280km": 0.894,
+        "expected_depreciation_inr": 173960.0
+      }
+    },
+    "Retread_15000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.074,
+        "steady_state_temp_c": 75.9
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.674,
+        "survival_probability_at_280km": 0.7601,
+        "expected_depreciation_inr": 374776.0
+      }
+    },
+    "Virgin_15000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.064,
+        "steady_state_temp_c": 77.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.4,
+        "survival_probability_at_280km": 0.8499,
+        "expected_depreciation_inr": 240192.0
+      }
+    },
+    "Retread_15000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.074,
+        "steady_state_temp_c": 80.9
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.979,
+        "survival_probability_at_280km": 0.6715,
+        "expected_depreciation_inr": 507747.0
+      }
+    },
+    "Virgin_15000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.064,
+        "steady_state_temp_c": 82.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.581,
+        "survival_probability_at_280km": 0.7896,
+        "expected_depreciation_inr": 330591.0
+      }
+    },
+    "Retread_15000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.074,
+        "steady_state_temp_c": 85.9
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.421,
+        "survival_probability_at_280km": 0.5608,
+        "expected_depreciation_inr": 673725.0
+      }
+    },
+    "Virgin_20000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.086,
+        "steady_state_temp_c": 50.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.056,
+        "survival_probability_at_280km": 0.9775,
+        "expected_depreciation_inr": 48709.0
+      }
+    },
+    "Retread_20000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.099,
+        "steady_state_temp_c": 54.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.137,
+        "survival_probability_at_280km": 0.9459,
+        "expected_depreciation_inr": 96187.0
+      }
+    },
+    "Virgin_20000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.086,
+        "steady_state_temp_c": 55.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.081,
+        "survival_probability_at_280km": 0.9675,
+        "expected_depreciation_inr": 63701.0
+      }
+    },
+    "Retread_20000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.099,
+        "steady_state_temp_c": 59.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.199,
+        "survival_probability_at_280km": 0.9224,
+        "expected_depreciation_inr": 131439.0
+      }
+    },
+    "Virgin_20000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.086,
+        "steady_state_temp_c": 60.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.118,
+        "survival_probability_at_280km": 0.9532,
+        "expected_depreciation_inr": 85200.0
+      }
+    },
+    "Retread_20000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.099,
+        "steady_state_temp_c": 64.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.288,
+        "survival_probability_at_280km": 0.8893,
+        "expected_depreciation_inr": 181076.0
+      }
+    },
+    "Virgin_20000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.086,
+        "steady_state_temp_c": 65.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.171,
+        "survival_probability_at_280km": 0.9328,
+        "expected_depreciation_inr": 115853.0
+      }
+    },
+    "Retread_20000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.099,
+        "steady_state_temp_c": 69.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.419,
+        "survival_probability_at_280km": 0.8433,
+        "expected_depreciation_inr": 250003.0
+      }
+    },
+    "Virgin_20000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.086,
+        "steady_state_temp_c": 70.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.248,
+        "survival_probability_at_280km": 0.9039,
+        "expected_depreciation_inr": 159199.0
+      }
+    },
+    "Retread_20000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.099,
+        "steady_state_temp_c": 74.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.608,
+        "survival_probability_at_280km": 0.7808,
+        "expected_depreciation_inr": 343805.0
+      }
+    },
+    "Virgin_20000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.086,
+        "steady_state_temp_c": 75.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.361,
+        "survival_probability_at_280km": 0.8635,
+        "expected_depreciation_inr": 219765.0
+      }
+    },
+    "Retread_20000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.099,
+        "steady_state_temp_c": 79.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.883,
+        "survival_probability_at_280km": 0.6982,
+        "expected_depreciation_inr": 467774.0
+      }
+    },
+    "Virgin_20000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.086,
+        "steady_state_temp_c": 80.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.524,
+        "survival_probability_at_280km": 0.808,
+        "expected_depreciation_inr": 302931.0
+      }
+    },
+    "Retread_20000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.099,
+        "steady_state_temp_c": 84.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.282,
+        "survival_probability_at_280km": 0.5935,
+        "expected_depreciation_inr": 624812.0
+      }
+    },
+    "Virgin_20000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.086,
+        "steady_state_temp_c": 85.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.761,
+        "survival_probability_at_280km": 0.7338,
+        "expected_depreciation_inr": 414286.0
+      }
+    },
+    "Retread_20000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.099,
+        "steady_state_temp_c": 89.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.862,
+        "survival_probability_at_280km": 0.4687,
+        "expected_depreciation_inr": 811895.0
+      }
+    },
+    "Virgin_20000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.086,
+        "steady_state_temp_c": 90.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.105,
+        "survival_probability_at_280km": 0.638,
+        "expected_depreciation_inr": 558031.0
+      }
+    },
+    "Retread_20000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.099,
+        "steady_state_temp_c": 94.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.704,
+        "survival_probability_at_280km": 0.3328,
+        "expected_depreciation_inr": 1015851.0
+      }
+    },
+    "Virgin_25000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.107,
+        "steady_state_temp_c": 57.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.106,
+        "survival_probability_at_280km": 0.9577,
+        "expected_depreciation_inr": 78487.0
+      }
+    },
+    "Retread_25000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.123,
+        "steady_state_temp_c": 63.1
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.26,
+        "survival_probability_at_280km": 0.8995,
+        "expected_depreciation_inr": 165692.0
+      }
+    },
+    "Virgin_25000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.107,
+        "steady_state_temp_c": 62.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.154,
+        "survival_probability_at_280km": 0.9391,
+        "expected_depreciation_inr": 106303.0
+      }
+    },
+    "Retread_25000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.123,
+        "steady_state_temp_c": 68.1
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.378,
+        "survival_probability_at_280km": 0.8575,
+        "expected_depreciation_inr": 228762.0
+      }
+    },
+    "Virgin_25000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.107,
+        "steady_state_temp_c": 67.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.224,
+        "survival_probability_at_280km": 0.9128,
+        "expected_depreciation_inr": 145741.0
+      }
+    },
+    "Retread_25000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.123,
+        "steady_state_temp_c": 73.1
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.549,
+        "survival_probability_at_280km": 0.7999,
+        "expected_depreciation_inr": 315139.0
+      }
+    },
+    "Virgin_25000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.107,
+        "steady_state_temp_c": 72.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.325,
+        "survival_probability_at_280km": 0.876,
+        "expected_depreciation_inr": 201053.0
+      }
+    },
+    "Retread_25000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.123,
+        "steady_state_temp_c": 78.1
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.797,
+        "survival_probability_at_280km": 0.7231,
+        "expected_depreciation_inr": 430348.0
+      }
+    },
+    "Virgin_25000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.107,
+        "steady_state_temp_c": 77.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.473,
+        "survival_probability_at_280km": 0.8251,
+        "expected_depreciation_inr": 277420.0
+      }
+    },
+    "Retread_25000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.123,
+        "steady_state_temp_c": 83.1
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.157,
+        "survival_probability_at_280km": 0.6245,
+        "expected_depreciation_inr": 578243.0
+      }
+    },
+    "Virgin_25000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.107,
+        "steady_state_temp_c": 82.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.686,
+        "survival_probability_at_280km": 0.7563,
+        "expected_depreciation_inr": 380485.0
+      }
+    },
+    "Retread_25000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.123,
+        "steady_state_temp_c": 88.1
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.68,
+        "survival_probability_at_280km": 0.5048,
+        "expected_depreciation_inr": 757856.0
+      }
+    },
+    "Virgin_25000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.107,
+        "steady_state_temp_c": 87.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.997,
+        "survival_probability_at_280km": 0.6666,
+        "expected_depreciation_inr": 515062.0
+      }
+    },
+    "Retread_25000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.123,
+        "steady_state_temp_c": 93.1
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.44,
+        "survival_probability_at_280km": 0.3705,
+        "expected_depreciation_inr": 959187.0
+      }
+    },
+    "Virgin_25000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.107,
+        "steady_state_temp_c": 92.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.447,
+        "survival_probability_at_280km": 0.5549,
+        "expected_depreciation_inr": 682583.0
+      }
+    },
+    "Retread_25000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.123,
+        "steady_state_temp_c": 98.1
+      },
+      "cox_financial": {
+        "hazard_ratio": 3.543,
+        "survival_probability_at_280km": 0.2365,
+        "expected_depreciation_inr": 1160204.0
+      }
+    },
+    "Virgin_25000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.107,
+        "steady_state_temp_c": 97.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.102,
+        "survival_probability_at_280km": 0.4252,
+        "expected_depreciation_inr": 877172.0
+      }
+    },
+    "Retread_25000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.123,
+        "steady_state_temp_c": 103.1
+      },
+      "cox_financial": {
+        "hazard_ratio": 5.145,
+        "survival_probability_at_280km": 0.1233,
+        "expected_depreciation_inr": 1330124.0
+      }
+    },
+    "Virgin_30000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.129,
+        "steady_state_temp_c": 65.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.202,
+        "survival_probability_at_280km": 0.921,
+        "expected_depreciation_inr": 133484.0
+      }
+    },
+    "Retread_30000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.148,
+        "steady_state_temp_c": 71.8
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.495,
+        "survival_probability_at_280km": 0.8176,
+        "expected_depreciation_inr": 288673.0
+      }
+    },
+    "Virgin_30000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.129,
+        "steady_state_temp_c": 70.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.294,
+        "survival_probability_at_280km": 0.8874,
+        "expected_depreciation_inr": 183938.0
+      }
+    },
+    "Retread_30000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.148,
+        "steady_state_temp_c": 76.8
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.719,
+        "survival_probability_at_280km": 0.7464,
+        "expected_depreciation_inr": 395433.0
+      }
+    },
+    "Virgin_30000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.129,
+        "steady_state_temp_c": 75.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.426,
+        "survival_probability_at_280km": 0.8407,
+        "expected_depreciation_inr": 253942.0
+      }
+    },
+    "Retread_30000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.148,
+        "steady_state_temp_c": 81.8
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.044,
+        "survival_probability_at_280km": 0.6539,
+        "expected_depreciation_inr": 534137.0
+      }
+    },
+    "Virgin_30000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.129,
+        "steady_state_temp_c": 80.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.619,
+        "survival_probability_at_280km": 0.7773,
+        "expected_depreciation_inr": 349097.0
+      }
+    },
+    "Retread_30000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.148,
+        "steady_state_temp_c": 86.8
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.516,
+        "survival_probability_at_280km": 0.5396,
+        "expected_depreciation_inr": 705542.0
+      }
+    },
+    "Virgin_30000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.129,
+        "steady_state_temp_c": 85.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.899,
+        "survival_probability_at_280km": 0.6936,
+        "expected_depreciation_inr": 474639.0
+      }
+    },
+    "Retread_30000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.148,
+        "steady_state_temp_c": 91.8
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.201,
+        "survival_probability_at_280km": 0.4083,
+        "expected_depreciation_inr": 902559.0
+      }
+    },
+    "Virgin_30000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.129,
+        "steady_state_temp_c": 90.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.306,
+        "survival_probability_at_280km": 0.5878,
+        "expected_depreciation_inr": 633273.0
+      }
+    },
+    "Retread_30000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.148,
+        "steady_state_temp_c": 96.8
+      },
+      "cox_financial": {
+        "hazard_ratio": 3.197,
+        "survival_probability_at_280km": 0.2723,
+        "expected_depreciation_inr": 1106525.0
+      }
+    },
+    "Virgin_30000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.129,
+        "steady_state_temp_c": 95.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.896,
+        "survival_probability_at_280km": 0.4623,
+        "expected_depreciation_inr": 821579.0
+      }
+    },
+    "Retread_30000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.148,
+        "steady_state_temp_c": 101.8
+      },
+      "cox_financial": {
+        "hazard_ratio": 4.642,
+        "survival_probability_at_280km": 0.1512,
+        "expected_depreciation_inr": 1288153.0
+      }
+    },
+    "Virgin_30000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.129,
+        "steady_state_temp_c": 100.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.753,
+        "survival_probability_at_280km": 0.3261,
+        "expected_depreciation_inr": 1025803.0
+      }
+    },
+    "Retread_30000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.148,
+        "steady_state_temp_c": 106.8
+      },
+      "cox_financial": {
+        "hazard_ratio": 6.741,
+        "survival_probability_at_280km": 0.0644,
+        "expected_depreciation_inr": 1418438.0
+      }
+    },
+    "Virgin_30000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.129,
+        "steady_state_temp_c": 105.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 3.998,
+        "survival_probability_at_280km": 0.1965,
+        "expected_depreciation_inr": 1220243.0
+      }
+    },
+    "Retread_30000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.148,
+        "steady_state_temp_c": 111.8
+      },
+      "cox_financial": {
+        "hazard_ratio": 9.789,
+        "survival_probability_at_280km": 0.0186,
+        "expected_depreciation_inr": 1487064.0
+      }
+    },
+    "Virgin_35000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.15,
+        "steady_state_temp_c": 72.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.385,
+        "survival_probability_at_280km": 0.8551,
+        "expected_depreciation_inr": 232377.0
+      }
+    },
+    "Retread_35000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.172,
+        "steady_state_temp_c": 80.4
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.942,
+        "survival_probability_at_280km": 0.6816,
+        "expected_depreciation_inr": 492562.0
+      }
+    },
+    "Virgin_35000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.15,
+        "steady_state_temp_c": 77.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.559,
+        "survival_probability_at_280km": 0.7966,
+        "expected_depreciation_inr": 320032.0
+      }
+    },
+    "Retread_35000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.172,
+        "steady_state_temp_c": 85.4
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.368,
+        "survival_probability_at_280km": 0.5732,
+        "expected_depreciation_inr": 655246.0
+      }
+    },
+    "Virgin_35000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.15,
+        "steady_state_temp_c": 82.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.811,
+        "survival_probability_at_280km": 0.7188,
+        "expected_depreciation_inr": 436765.0
+      }
+    },
+    "Retread_35000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.172,
+        "steady_state_temp_c": 90.4
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.986,
+        "survival_probability_at_280km": 0.4456,
+        "expected_depreciation_inr": 846530.0
+      }
+    },
+    "Virgin_35000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.15,
+        "steady_state_temp_c": 87.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.178,
+        "survival_probability_at_280km": 0.6191,
+        "expected_depreciation_inr": 586280.0
+      }
+    },
+    "Retread_35000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.172,
+        "steady_state_temp_c": 95.4
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.884,
+        "survival_probability_at_280km": 0.3092,
+        "expected_depreciation_inr": 1051156.0
+      }
+    },
+    "Virgin_35000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.15,
+        "steady_state_temp_c": 92.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.711,
+        "survival_probability_at_280km": 0.4985,
+        "expected_depreciation_inr": 767272.0
+      }
+    },
+    "Retread_35000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.172,
+        "steady_state_temp_c": 100.4
+      },
+      "cox_financial": {
+        "hazard_ratio": 4.188,
+        "survival_probability_at_280km": 0.1819,
+        "expected_depreciation_inr": 1242164.0
+      }
+    },
+    "Virgin_35000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.15,
+        "steady_state_temp_c": 97.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.484,
+        "survival_probability_at_280km": 0.3639,
+        "expected_depreciation_inr": 969195.0
+      }
+    },
+    "Retread_35000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.172,
+        "steady_state_temp_c": 105.4
+      },
+      "cox_financial": {
+        "hazard_ratio": 6.082,
+        "survival_probability_at_280km": 0.0842,
+        "expected_depreciation_inr": 1388752.0
+      }
+    },
+    "Virgin_35000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.15,
+        "steady_state_temp_c": 102.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 3.608,
+        "survival_probability_at_280km": 0.2304,
+        "expected_depreciation_inr": 1169444.0
+      }
+    },
+    "Retread_35000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.172,
+        "steady_state_temp_c": 110.4
+      },
+      "cox_financial": {
+        "hazard_ratio": 8.832,
+        "survival_probability_at_280km": 0.0275,
+        "expected_depreciation_inr": 1473769.0
+      }
+    },
+    "Virgin_35000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.15,
+        "steady_state_temp_c": 107.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 5.239,
+        "survival_probability_at_280km": 0.1186,
+        "expected_depreciation_inr": 1337074.0
+      }
+    },
+    "Retread_35000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.172,
+        "steady_state_temp_c": 115.4
+      },
+      "cox_financial": {
+        "hazard_ratio": 12.826,
+        "survival_probability_at_280km": 0.0054,
+        "expected_depreciation_inr": 1506882.0
+      }
+    },
+    "Virgin_35000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.15,
+        "steady_state_temp_c": 112.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 7.608,
+        "survival_probability_at_280km": 0.0452,
+        "expected_depreciation_inr": 1447140.0
+      }
+    },
+    "Retread_35000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.172,
+        "steady_state_temp_c": 120.4
+      },
+      "cox_financial": {
+        "hazard_ratio": 18.625,
+        "survival_probability_at_280km": 0.0005,
+        "expected_depreciation_inr": 1514233.0
+      }
+    },
+    "Virgin_40000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.171,
+        "steady_state_temp_c": 80.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 0.732,
+        "survival_probability_at_280km": 0.7424,
+        "expected_depreciation_inr": 401411.0
+      }
+    },
+    "Retread_40000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.197,
+        "steady_state_temp_c": 89.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.792,
+        "survival_probability_at_280km": 0.4823,
+        "expected_depreciation_inr": 791591.0
+      }
+    },
+    "Virgin_40000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.171,
+        "steady_state_temp_c": 85.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.063,
+        "survival_probability_at_280km": 0.6488,
+        "expected_depreciation_inr": 541734.0
+      }
+    },
+    "Retread_40000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.197,
+        "steady_state_temp_c": 94.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.602,
+        "survival_probability_at_280km": 0.3468,
+        "expected_depreciation_inr": 994783.0
+      }
+    },
+    "Virgin_40000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.171,
+        "steady_state_temp_c": 90.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.544,
+        "survival_probability_at_280km": 0.5336,
+        "expected_depreciation_inr": 714630.0
+      }
+    },
+    "Retread_40000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.197,
+        "steady_state_temp_c": 99.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 3.779,
+        "survival_probability_at_280km": 0.2149,
+        "expected_depreciation_inr": 1192717.0
+      }
+    },
+    "Virgin_40000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.171,
+        "steady_state_temp_c": 95.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.242,
+        "survival_probability_at_280km": 0.4017,
+        "expected_depreciation_inr": 912519.0
+      }
+    },
+    "Retread_40000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.197,
+        "steady_state_temp_c": 104.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 5.488,
+        "survival_probability_at_280km": 0.1072,
+        "expected_depreciation_inr": 1354207.0
+      }
+    },
+    "Virgin_40000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.171,
+        "steady_state_temp_c": 100.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 3.255,
+        "survival_probability_at_280km": 0.2659,
+        "expected_depreciation_inr": 1116136.0
+      }
+    },
+    "Retread_40000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.197,
+        "steady_state_temp_c": 109.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 7.969,
+        "survival_probability_at_280km": 0.0391,
+        "expected_depreciation_inr": 1456419.0
+      }
+    },
+    "Virgin_40000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.171,
+        "steady_state_temp_c": 105.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 4.727,
+        "survival_probability_at_280km": 0.1461,
+        "expected_depreciation_inr": 1295862.0
+      }
+    },
+    "Retread_40000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.197,
+        "steady_state_temp_c": 114.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 11.572,
+        "survival_probability_at_280km": 0.009,
+        "expected_depreciation_inr": 1501480.0
+      }
+    },
+    "Virgin_40000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.171,
+        "steady_state_temp_c": 110.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 6.864,
+        "survival_probability_at_280km": 0.0612,
+        "expected_depreciation_inr": 1423166.0
+      }
+    },
+    "Retread_40000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.197,
+        "steady_state_temp_c": 119.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 16.805,
+        "survival_probability_at_280km": 0.0011,
+        "expected_depreciation_inr": 1513392.0
+      }
+    },
+    "Virgin_40000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.171,
+        "steady_state_temp_c": 115.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 9.968,
+        "survival_probability_at_280km": 0.0173,
+        "expected_depreciation_inr": 1489028.0
+      }
+    },
+    "Retread_40000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.197,
+        "steady_state_temp_c": 124.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 24.403,
+        "survival_probability_at_280km": 0.0,
+        "expected_depreciation_inr": 1514927.0
+      }
+    },
+    "Virgin_40000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.171,
+        "steady_state_temp_c": 120.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 14.475,
+        "survival_probability_at_280km": 0.0028,
+        "expected_depreciation_inr": 1510850.0
+      }
+    },
+    "Retread_40000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.197,
+        "steady_state_temp_c": 129.0
+      },
+      "cox_financial": {
+        "hazard_ratio": 35.437,
+        "survival_probability_at_280km": 0.0,
+        "expected_depreciation_inr": 1514999.0
+      }
+    },
+    "Virgin_45000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.193,
+        "steady_state_temp_c": 87.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 1.393,
+        "survival_probability_at_280km": 0.5674,
+        "expected_depreciation_inr": 663960.0
+      }
+    },
+    "Retread_45000kg_20C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.222,
+        "steady_state_temp_c": 97.6
+      },
+      "cox_financial": {
+        "hazard_ratio": 3.41,
+        "survival_probability_at_280km": 0.2497,
+        "expected_depreciation_inr": 1140456.0
+      }
+    },
+    "Virgin_45000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.193,
+        "steady_state_temp_c": 92.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.023,
+        "survival_probability_at_280km": 0.4391,
+        "expected_depreciation_inr": 856347.0
+      }
+    },
+    "Retread_45000kg_25C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.222,
+        "steady_state_temp_c": 102.6
+      },
+      "cox_financial": {
+        "hazard_ratio": 4.951,
+        "survival_probability_at_280km": 0.1333,
+        "expected_depreciation_inr": 1314995.0
+      }
+    },
+    "Virgin_45000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.193,
+        "steady_state_temp_c": 97.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 2.937,
+        "survival_probability_at_280km": 0.3027,
+        "expected_depreciation_inr": 1061014.0
+      }
+    },
+    "Retread_45000kg_30C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.222,
+        "steady_state_temp_c": 107.6
+      },
+      "cox_financial": {
+        "hazard_ratio": 7.19,
+        "survival_probability_at_280km": 0.0536,
+        "expected_depreciation_inr": 1434576.0
+      }
+    },
+    "Virgin_45000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.193,
+        "steady_state_temp_c": 102.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 4.265,
+        "survival_probability_at_280km": 0.1763,
+        "expected_depreciation_inr": 1250543.0
+      }
+    },
+    "Retread_45000kg_35C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.222,
+        "steady_state_temp_c": 112.6
+      },
+      "cox_financial": {
+        "hazard_ratio": 10.441,
+        "survival_probability_at_280km": 0.0143,
+        "expected_depreciation_inr": 1493579.0
+      }
+    },
+    "Virgin_45000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.193,
+        "steady_state_temp_c": 107.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 6.193,
+        "survival_probability_at_280km": 0.0804,
+        "expected_depreciation_inr": 1394343.0
+      }
+    },
+    "Retread_45000kg_40C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.222,
+        "steady_state_temp_c": 117.6
+      },
+      "cox_financial": {
+        "hazard_ratio": 15.162,
+        "survival_probability_at_280km": 0.0021,
+        "expected_depreciation_inr": 1511863.0
+      }
+    },
+    "Virgin_45000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.193,
+        "steady_state_temp_c": 112.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 8.994,
+        "survival_probability_at_280km": 0.0257,
+        "expected_depreciation_inr": 1476394.0
+      }
+    },
+    "Retread_45000kg_45C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.222,
+        "steady_state_temp_c": 122.6
+      },
+      "cox_financial": {
+        "hazard_ratio": 22.018,
+        "survival_probability_at_280km": 0.0001,
+        "expected_depreciation_inr": 1514807.0
+      }
+    },
+    "Virgin_45000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.193,
+        "steady_state_temp_c": 117.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 13.06,
+        "survival_probability_at_280km": 0.0049,
+        "expected_depreciation_inr": 1507621.0
+      }
+    },
+    "Retread_45000kg_50C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.222,
+        "steady_state_temp_c": 127.6
+      },
+      "cox_financial": {
+        "hazard_ratio": 31.974,
+        "survival_probability_at_280km": 0.0,
+        "expected_depreciation_inr": 1514997.0
+      }
+    },
+    "Virgin_45000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.193,
+        "steady_state_temp_c": 122.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 18.966,
+        "survival_probability_at_280km": 0.0004,
+        "expected_depreciation_inr": 1514333.0
+      }
+    },
+    "Retread_45000kg_55C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.222,
+        "steady_state_temp_c": 132.6
+      },
+      "cox_financial": {
+        "hazard_ratio": 46.431,
+        "survival_probability_at_280km": 0.0,
+        "expected_depreciation_inr": 1515000.0
+      }
+    },
+    "Virgin_45000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.193,
+        "steady_state_temp_c": 127.5
+      },
+      "cox_financial": {
+        "hazard_ratio": 27.541,
+        "survival_probability_at_280km": 0.0,
+        "expected_depreciation_inr": 1514980.0
+      }
+    },
+    "Retread_45000kg_60C": {
+      "lme_physical": {
+        "heat_buildup_rate_c_per_km": 0.222,
+        "steady_state_temp_c": 137.6
+      },
+      "cox_financial": {
+        "hazard_ratio": 67.425,
+        "survival_probability_at_280km": 0.0,
+        "expected_depreciation_inr": 1515000.0
+      }
+    }
+  }
+}

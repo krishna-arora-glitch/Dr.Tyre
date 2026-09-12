@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+**/dist/
+build/
+**/build/
+
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+**/venv/
+
+# Cache
+**/pipeline/cache/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary / Scratch
+scratch/
+**/scratch/
+scratch_*.mjs
+test-wrap.mjs
