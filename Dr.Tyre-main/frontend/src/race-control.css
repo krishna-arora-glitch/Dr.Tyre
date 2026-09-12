@@ -556,3 +556,17 @@
 #competitor-strategy-modal.hidden {
   display: none !important;
 }
+
+.csm-inspect-btn {
+  cursor: pointer !important;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease !important;
+}
+.csm-inspect-btn:hover {
+  background: #bfdbfe !important;
+  border-color: #1d4ed8 !important;
+  color: #1e3a8a !important;
+  transform: translateY(-1px) scale(1.04) !important;
+}
+.csm-inspect-btn:active {
+  transform: translateY(0px) scale(0.97) !important;
+}

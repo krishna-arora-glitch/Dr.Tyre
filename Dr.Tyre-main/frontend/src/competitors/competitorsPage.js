@@ -3,11 +3,19 @@ import { getDegradationDelta, getRecommendation, evaluate_undercut, getDegradati
 import { CIRCUITS } from '../simulation/circuits.js';
 import { evaluateOpponentIntent } from '../simulation/opponentIntent.js';
 import { computeTyreFingerprint } from '../simulation/tyreFingerprint.js';
+import { generateGrid } from '../simulation/competitors.js';
 
 let initialized = false;
 let currentModelData = null;
 let lastSimState = null;
 let selectedCarNumber = null;
+
+// Expose globally immediately so inline onclick handlers work without waiting
+if (typeof window !== 'undefined') {
+  window.openCompetitorPrescription = openCompetitorPrescription;
+  window.openCompetitorModal = openCompetitorPrescription;
+  window.closeCompetitorModal = closeCompetitorModal;
+}
 
 /**
  * Initializes the Competitors Comparison page and sets up persistent
@@ -37,9 +45,7 @@ export function initCompetitorsPage(modelData) {
 
   // Initial render if simulation state already exists
   const existingState = lastSimState || (typeof getSimulationState === 'function' ? getSimulationState() : null) || window.getSimulationState?.();
-  if (existingState && existingState.cars && existingState.cars.length > 0) {
-    updateCompetitorsTable(existingState);
-  }
+  updateCompetitorsTable(existingState);
 }
 
 /**
@@ -51,19 +57,19 @@ function setupModalEvents() {
   const closeBtn = document.getElementById('csm-btn-close');
 
   if (closeBtn) {
-    closeBtn.addEventListener('click', (e) => {
+    closeBtn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
       closeCompetitorModal();
-    });
+    };
   }
 
   if (modal) {
-    modal.addEventListener('click', (e) => {
+    modal.onclick = (e) => {
       if (e.target === modal) {
         closeCompetitorModal();
       }
-    });
+    };
   }
 
   // Close modal via Escape key
@@ -73,19 +79,30 @@ function setupModalEvents() {
     }
   });
 
-  // Event delegation on the document for competitor row clicks.
-  // This guarantees clicks are caught even if table elements are refreshed mid-click.
+  // Event delegation on the document for competitor row clicks & inspect button clicks.
+  // This guarantees clicks are caught regardless of re-render or dynamic replacement.
   document.addEventListener('click', (e) => {
+    // Check for inspect button click first
+    const inspectBtn = e.target.closest('.csm-inspect-btn');
+    if (inspectBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const row = inspectBtn.closest('.competitor-row');
+      const carId = row?.dataset?.carNumber || row?.getAttribute('data-car-number') || row?.getAttribute('data-car-id');
+      if (carId !== null && carId !== undefined) {
+        console.log(`[Competitor Prescription] Inspect button clicked: #${carId}`);
+        openCompetitorPrescription(carId);
+      }
+      return;
+    }
+
+    // Check for competitor row click
     const row = e.target.closest('.competitor-row');
     if (!row) return;
 
-    // Check that row is inside the competitor table
-    const tableBody = row.closest('#competitors-table-body');
-    if (!tableBody) return;
-
     const carId = row.dataset.carNumber || row.getAttribute('data-car-number') || row.getAttribute('data-car-id');
     if (carId !== null && carId !== undefined) {
-      console.log(`[Competitor Prescription] Row clicked: #${carId}`);
+      console.log(`[Competitor Prescription] Row clicked via delegation: #${carId}`);
       openCompetitorPrescription(carId);
     }
   });
@@ -98,7 +115,9 @@ export function closeCompetitorModal() {
   const modal = document.getElementById('competitor-strategy-modal');
   if (modal) {
     modal.classList.add('hidden');
-    modal.style.display = 'none';
+    modal.style.setProperty('display', 'none', 'important');
+    modal.style.setProperty('visibility', 'hidden', 'important');
+    modal.style.setProperty('opacity', '0', 'important');
   }
   selectedCarNumber = null;
 
@@ -116,16 +135,18 @@ function updateCompetitorsTable(simState) {
   const tbody = document.getElementById('competitors-table-body');
   if (!tbody) return;
 
+  const circuit = CIRCUITS[raceConfig?.trackId];
+  const baseLapTime = circuit ? circuit.baseLapTimeSec : 94.0;
+
+  // Fallback to initial grid if simulation not started yet
   if (!simState || !simState.cars || simState.cars.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--text-muted);">Waiting for grid telemetry...</td></tr>';
-    return;
+    const cars = generateGrid(8, baseLapTime);
+    simState = { lap: 1, totalLaps: circuit?.raceLaps || 61, cars, userCar: cars.find(c => c.isUser) || cars[0] };
   }
 
   const userCar = simState.cars.find(c => c.isUser);
   const totalLaps = simState.totalLaps || 61;
   const currentLap = simState.lap || 1;
-  const circuit = CIRCUITS[raceConfig?.trackId];
-  const baseLapTime = circuit ? circuit.baseLapTimeSec : 94.0;
 
   let html = '';
   const sortedCars = [...simState.cars].sort((a, b) => (a.position || 0) - (b.position || 0));
@@ -177,29 +198,33 @@ function updateCompetitorsTable(simState) {
 
     const isSelected = (selectedCarNumber !== null && Number(car.number) === Number(selectedCarNumber));
     const trClass = `competitor-row ${isSelected ? 'selected-row' : ''}`;
-    const trStyle = isUser ? 'background: rgba(0, 229, 255, 0.08); border-left: 3px solid var(--cyan);' : '';
+    const trStyle = isUser ? 'background: rgba(0, 229, 255, 0.08); border-left: 3px solid var(--cyan); cursor: pointer;' : 'cursor: pointer;';
 
-    const setupStr = car.setup ? `<div style="font-size:0.7em;color:var(--text-muted);pointer-events:none;">${car.setup.downforceLevel} DF / ${car.setup.balance} BAL</div>` : '';
+    const setupStr = car.setup ? `<div style="font-size:0.7em;color:var(--text-muted);">${car.setup.downforceLevel} DF / ${car.setup.balance} BAL</div>` : '';
 
     const optLapDisplay = (!rec.optimalLap || rec.optimalLap === 'N/A') 
       ? 'N/A' 
       : (String(rec.optimalLap).toUpperCase().includes('FINISH') ? 'RACE FINISH' : (String(rec.optimalLap).startsWith('Lap') ? rec.optimalLap : `Lap ${rec.optimalLap}`));
 
     html += `
-      <tr class="${trClass}" data-car-number="${car.number}" data-car-id="${car.id || car.number}" style="${trStyle}" title="Click to view detailed strategy prescription for Car ${car.number}">
+      <tr class="${trClass}" data-car-number="${car.number}" data-car-id="${car.id || car.number}" style="${trStyle}" onclick="window.openCompetitorPrescription('${car.number}')" title="Click to view detailed strategy prescription for Car ${car.number}">
         <td><strong style="${isUser ? 'color: var(--cyan);' : ''}">P${car.position}</strong></td>
         <td>
-          <div style="display: flex; align-items: center; gap: 6px; pointer-events: none;">
-            <strong>${isUser ? 'YOU (#11)' : (car.driverName ? `${car.driverName} (#${car.number})` : `AI (#${car.number})`)}</strong>
-            <span class="csm-inspect-btn" style="font-size: 0.65rem; color: #2563eb; background: #dbeafe; padding: 1px 5px; border-radius: 3px; font-weight: 800; border: 1px solid #93c5fd; pointer-events: none;">INSPECT ↗</span>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div>
+              <strong style="${isUser ? 'color: var(--cyan);' : ''}">${isUser ? 'YOU (#11)' : (car.driverName ? `${car.driverName} (#${car.number})` : `AI (#${car.number})`)}</strong>
+              ${setupStr}
+            </div>
+            <button type="button" class="csm-inspect-btn" onclick="event.stopPropagation(); window.openCompetitorPrescription('${car.number}')" style="cursor: pointer; font-family: var(--font-mono); font-size: 0.68rem; color: #1e40af; background: #dbeafe; padding: 3px 8px; border-radius: 4px; font-weight: 800; border: 1.5px solid #3b82f6; box-shadow: 0 1px 2px rgba(0,0,0,0.12); display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase;">
+              <span>INSPECT</span> <span style="font-size: 0.8rem; font-weight: 900;">↗</span>
+            </button>
           </div>
-          ${setupStr}
         </td>
-        <td><span class="data-label" style="background: ${getCompoundColor(car.compound)}20; color: ${getCompoundColor(car.compound)}; border-color: ${getCompoundColor(car.compound)}50; pointer-events: none;">${car.compound}</span></td>
-        <td style="pointer-events: none;">${Math.max(1, car.tyreAge)}${isCliff ? ' ⚠️ (CLIFF)' : ''}</td>
-        <td style="color: #dc2626; font-weight: 700; pointer-events: none;">+${paceLoss.toFixed(2)}s <span style="font-size:0.8em;color:var(--text-muted);font-weight:normal;">&plusmn;${uncertainty.toFixed(2)}</span></td>
-        <td ${recClass} style="pointer-events: none;">${rec.state} (${optLapDisplay})</td>
-        <td class="${battleClass}" style="pointer-events: none;">${battleText}</td>
+        <td><span class="data-label" style="background: ${getCompoundColor(car.compound)}20; color: ${getCompoundColor(car.compound)}; border-color: ${getCompoundColor(car.compound)}50;">${car.compound}</span></td>
+        <td>${Math.max(1, car.tyreAge)}${isCliff ? ' ⚠️ (CLIFF)' : ''}</td>
+        <td style="color: #dc2626; font-weight: 700;">+${paceLoss.toFixed(2)}s <span style="font-size:0.8em;color:var(--text-muted);font-weight:normal;">&plusmn;${uncertainty.toFixed(2)}</span></td>
+        <td ${recClass}>${rec.state} (${optLapDisplay})</td>
+        <td class="${battleClass}">${battleText}</td>
       </tr>
     `;
   });
@@ -216,10 +241,12 @@ export function openCompetitorPrescription(carId) {
   const carNumber = Number(carId);
   console.log(`[Competitor Prescription] Opening prescription for: #${carNumber}`);
 
-  const state = lastSimState || (typeof getSimulationState === 'function' ? getSimulationState() : null) || window.getSimulationState?.();
+  let state = lastSimState || (typeof getSimulationState === 'function' ? getSimulationState() : null) || window.getSimulationState?.();
   if (!state || !state.cars || state.cars.length === 0) {
-    console.warn('[Competitor Prescription] Simulation state has no cars.');
-    return;
+    const circuit = CIRCUITS[raceConfig?.trackId];
+    const baseLapTime = circuit ? circuit.baseLapTimeSec : 94.0;
+    const cars = generateGrid(8, baseLapTime);
+    state = { lap: 1, totalLaps: circuit?.raceLaps || 61, cars, userCar: cars.find(c => c.isUser) || cars[0] };
   }
 
   // Find exact competitor car by number or ID
@@ -376,10 +403,12 @@ function renderCompetitorStrategyModal(car, simState) {
 
   // Set modal visible
   modal.classList.remove('hidden');
-  modal.style.display = 'flex';
-  modal.style.visibility = 'visible';
-  modal.style.opacity = '1';
-  console.log('[Competitor Prescription] Modal opened: true');
+  modal.style.setProperty('display', 'flex', 'important');
+  modal.style.setProperty('visibility', 'visible', 'important');
+  modal.style.setProperty('opacity', '1', 'important');
+  modal.style.setProperty('pointer-events', 'auto', 'important');
+  modal.style.setProperty('z-index', '999999', 'important');
+  console.log('[Competitor Prescription] Modal opened: true for Car #' + car.number);
 }
 
 function renderMiniBar(id, val) {

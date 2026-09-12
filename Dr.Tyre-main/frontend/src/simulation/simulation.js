@@ -92,6 +92,14 @@ export function initSimulation(data, telData) {
   window.modelData = data;
   window.telemetryData = telData;
   initStrategy(data);
+
+  // Initialize grid baseline so cars are immediately available across all views & modals
+  if (!state.cars || state.cars.length === 0) {
+    const basePace = getBaseLapTime();
+    state.cars = generateGrid(8, basePace);
+    state.userCar = state.cars.find(c => c.isUser) || state.cars[0];
+    if (state.userCar) state.userCar.isUser = true;
+  }
   
   // Cache DOM
   DOM.startScreen = document.getElementById('start-screen');

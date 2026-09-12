@@ -543,6 +543,7 @@ async function bootstrap() {
     modelData = data;
     if (modelData) {
       initSimulation(modelData, modelData.telemetry);
+      initCompetitorsPage(modelData);
       initResearchPages(modelData);
       initLapChart();
       initExtraCharts();
