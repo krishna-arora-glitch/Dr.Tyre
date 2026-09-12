@@ -68,62 +68,52 @@ export function computeTyreHealth(car, modelData = null) {
   const tyreEnergyLaps = Math.max(0, Math.floor(nominalLapsRemaining / burnMultiplier));
   const tyreEnergyText = tyreAge >= cliffLap ? '0 LAPS (CLIFF)' : `${tyreEnergyLaps} LAPS`;
 
-  // ── E. PUNCTURE RISK ESTIMATION (0-100 Score) ──
-  // 1. AgeRisk: progressive power function of tyreAge / cliffLap
-  const ageRatio = tyreAge / Math.max(1, cliffLap);
-  const ageRisk = Math.min(1.0, Math.pow(ageRatio, 1.7));
+  // ── E. PUNCTURE RISK ESTIMATION: COX PROPORTIONAL HAZARDS SURVIVAL ENGINE ──
+  // Mathematically bridges physical stress to cumulative failure probability:
+  // h(t | X) = h_0(t) * exp(beta^T * X)
+  // S(t | X) = exp(- H_0(t) * HazardRatio)
+  // PunctureRisk = 1.0 - S(t | X)
+  
+  // 1. Weibull Baseline Cumulative Hazard: H_0(t) = (tyreAge / lambda_0)^k
+  // k = 2.5 (wear-out shape parameter matching logistics survival pipeline)
+  // lambda_0 = 1.25 * cliffLap (scale parameter where un-stressed tyre approaches failure)
+  const weibullShape = 2.5;
+  const baseLambda = 1.25 * Math.max(1, cliffLap);
+  const baselineAgeRatio = tyreAge / baseLambda;
+  const H0 = Math.pow(baselineAgeRatio, weibullShape);
 
-  // 2. CliffRisk: increases sharply as car nears and crosses cliff
-  let cliffRisk = 0.0;
-  if (tyreAge >= cliffLap) {
-    cliffRisk = Math.min(1.0, 0.60 + 0.40 * ((tyreAge - cliffLap) / Math.max(3, cliffLap * 0.25)));
-  } else if (tyreAge >= cliffLap - 4) {
-    cliffRisk = 0.15 + 0.45 * ((tyreAge - (cliffLap - 4)) / 4.0);
-  } else if (tyreAge >= cliffLap - 8) {
-    cliffRisk = 0.05 + 0.10 * ((tyreAge - (cliffLap - 8)) / 4.0);
-  }
+  // 2. Physical Covariates (X) normalized to operating deviations
+  const X_thermal = Math.max(0, (tyreTemp - win.opt) / 16.0);
+  const X_blister = Math.max(0, (blisterFactor - 1.0) / 2.0);
+  const X_stress = Math.max(0, (lapStress + 0.3) / 1.5);
+  const X_speed = Math.max(0, (speed - 160) / 140.0);
+  const X_cliff = tyreAge >= cliffLap 
+    ? (1.0 + (tyreAge - cliffLap) / Math.max(3, cliffLap * 0.25))
+    : (tyreAge >= cliffLap - 4 ? (0.4 + 0.6 * (tyreAge - (cliffLap - 4)) / 4.0) : 0.0);
 
-  // 3. ThermalRisk: based on temperature above optimal window
-  let thermalRisk = 0.0;
-  if (tyreTemp > win.opt) {
-    const tSpan = Math.max(6, win.blister - win.opt);
-    if (tyreTemp <= win.blister) {
-      thermalRisk = 0.60 * ((tyreTemp - win.opt) / tSpan);
-    } else {
-      thermalRisk = Math.min(1.0, 0.60 + 0.40 * ((tyreTemp - win.blister) / 8.0));
-    }
-  }
+  // 3. Log-Hazard Coefficients (beta) from physical wear and structural strain
+  const beta_thermal = 0.85;
+  const beta_blister = 1.20;
+  const beta_stress = 0.65;
+  const beta_speed = 0.50;
+  const beta_cliff = 0.90;
 
-  // 4. BlisterRisk: severe structural degradation once blistering begins
-  let blisterRisk = 0.0;
-  if (tyreTemp > win.blister) {
-    blisterRisk = Math.min(1.0, (blisterFactor - 1.0) / 2.5);
-  }
-
-  // 5. StressRisk: based on LapStress
-  const stressRisk = Math.max(0, Math.min(1.0, (lapStress + 0.4) / 1.5));
-
-  // 6. HighSpeedLoadRisk: sustained centrifugal carcass stress
-  const speedRisk = Math.max(0, Math.min(1.0, (speed - 160) / 140.0));
-
-  // Configurable weights summing to 1.00
-  const w_age = 0.20;
-  const w_cliff = 0.25;
-  const w_thermal = 0.20;
-  const w_blister = 0.15;
-  const w_stress = 0.10;
-  const w_speed = 0.10;
-
-  const rawPunctureRisk = 100 * (
-    (w_age * ageRisk) +
-    (w_cliff * cliffRisk) +
-    (w_thermal * thermalRisk) +
-    (w_blister * blisterRisk) +
-    (w_stress * stressRisk) +
-    (w_speed * speedRisk)
+  // 4. Log-Hazard Ratio & Exponent Multiplier
+  const logHazardRatio = (
+    beta_thermal * X_thermal +
+    beta_blister * X_blister +
+    beta_stress * X_stress +
+    beta_speed * X_speed +
+    beta_cliff * X_cliff
   );
+  const hazardMultiplier = Math.exp(Math.min(3.5, logHazardRatio)); // Clamped to avoid float overflow
 
-  // Baseline F1 running has ~3-5% structural hazard floor, clamped at 95%
+  // 5. Cumulative Hazard & Survival Probability S(t | X)
+  const cumulativeHazard = H0 * hazardMultiplier;
+  const survivalProb = Math.exp(-cumulativeHazard);
+
+  // 6. Final Failure / Puncture Risk Probability (with 3% baseline debris floor, clamped at 95%)
+  const rawPunctureRisk = 100 * (0.03 + 0.97 * (1.0 - survivalProb));
   const punctureRiskScore = Math.round(Math.max(3, Math.min(95, rawPunctureRisk)));
 
   let punctureRiskLevel = 'LOW';
@@ -144,6 +134,14 @@ export function computeTyreHealth(car, modelData = null) {
     punctureRiskBg = 'rgba(217, 119, 6, 0.14)';
   }
 
+  // Normalized component risk metrics for UI breakdown gauges
+  const ageRisk = Math.min(1.0, Math.pow(tyreAge / Math.max(1, cliffLap), 1.7));
+  const cliffRisk = Math.min(1.0, X_cliff);
+  const thermalRisk = Math.min(1.0, X_thermal);
+  const blisterRisk = Math.min(1.0, X_blister);
+  const stressRisk = Math.min(1.0, X_stress);
+  const speedRisk = Math.min(1.0, X_speed);
+
   return {
     gripLevel,
     treadRemaining,
@@ -155,6 +153,9 @@ export function computeTyreHealth(car, modelData = null) {
     punctureRiskLevel,
     punctureRiskColor,
     punctureRiskBg,
+    survivalProbability: Math.round(survivalProb * 100),
+    hazardRatio: parseFloat(hazardMultiplier.toFixed(2)),
+    baselineHazard: parseFloat(H0.toFixed(3)),
     components: {
       ageRisk: Math.round(ageRisk * 100),
       cliffRisk: Math.round(cliffRisk * 100),
