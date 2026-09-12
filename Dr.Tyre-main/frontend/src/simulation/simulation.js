@@ -118,6 +118,18 @@ export function initSimulation(data, telData) {
   DOM.rcHealthDegRate = document.getElementById('rc-health-deg-rate');
   DOM.rcHealthEnergy = document.getElementById('rc-health-energy');
   DOM.rcPunctureBadge = document.getElementById('rc-puncture-badge');
+  DOM.rcPanelGripBar = document.getElementById('rc-panel-grip-bar');
+  DOM.rcPanelTreadBar = document.getElementById('rc-panel-tread-bar');
+  DOM.rcPanelPunctureScore = document.getElementById('rc-panel-puncture-score');
+  DOM.rcPanelPunctureLevel = document.getElementById('rc-panel-puncture-level');
+  DOM.rcPanelTyreBadge = document.getElementById('rc-panel-tyre-badge');
+  DOM.rcPanelTyreTemp = document.getElementById('rc-panel-tyre-temp');
+  DOM.rcRiskAge = document.getElementById('rc-risk-age');
+  DOM.rcRiskCliff = document.getElementById('rc-risk-cliff');
+  DOM.rcRiskThermal = document.getElementById('rc-risk-thermal');
+  DOM.rcRiskBlister = document.getElementById('rc-risk-blister');
+  DOM.rcRiskStress = document.getElementById('rc-risk-stress');
+  DOM.rcRiskSpeed = document.getElementById('rc-risk-speed');
   DOM.gapAheadCar = document.getElementById('gap-ahead-car');
   DOM.gapAheadTime = document.getElementById('gap-ahead-time');
   DOM.gapBehindCar = document.getElementById('gap-behind-car');
@@ -989,10 +1001,41 @@ function updateUI() {
       DOM.rcPunctureBadge.style.background = health.punctureRiskBg;
       DOM.rcPunctureBadge.style.borderColor = health.punctureRiskColor;
     }
+    if (DOM.rcPanelGripBar) DOM.rcPanelGripBar.style.width = `${health.gripLevel}%`;
+    if (DOM.rcPanelTreadBar) DOM.rcPanelTreadBar.style.width = `${health.treadRemaining}%`;
+    if (DOM.rcPanelPunctureScore) {
+      DOM.rcPanelPunctureScore.textContent = `${health.punctureRiskScore}%`;
+      DOM.rcPanelPunctureScore.style.color = health.punctureRiskColor;
+    }
+    if (DOM.rcPanelPunctureLevel) {
+      DOM.rcPanelPunctureLevel.textContent = `${health.punctureRiskLevel} HAZARD`;
+      DOM.rcPanelPunctureLevel.style.color = health.punctureRiskColor;
+    }
+    if (DOM.rcPanelTyreBadge) {
+      DOM.rcPanelTyreBadge.textContent = u.compound;
+      if (u.compound === 'SOFT') {
+        DOM.rcPanelTyreBadge.style.background = '#fecaca';
+        DOM.rcPanelTyreBadge.style.color = '#991b1b';
+      } else if (u.compound === 'HARD') {
+        DOM.rcPanelTyreBadge.style.background = '#f3f4f6';
+        DOM.rcPanelTyreBadge.style.color = '#000';
+      } else {
+        DOM.rcPanelTyreBadge.style.background = '#fef08a';
+        DOM.rcPanelTyreBadge.style.color = '#854d0e';
+      }
+    }
+    if (health.components) {
+      if (DOM.rcRiskAge) DOM.rcRiskAge.textContent = `${health.components.ageRisk}%`;
+      if (DOM.rcRiskCliff) DOM.rcRiskCliff.textContent = `${health.components.cliffRisk}%`;
+      if (DOM.rcRiskThermal) DOM.rcRiskThermal.textContent = `${health.components.thermalRisk}%`;
+      if (DOM.rcRiskBlister) DOM.rcRiskBlister.textContent = `${health.components.blisterRisk}%`;
+      if (DOM.rcRiskStress) DOM.rcRiskStress.textContent = `${health.components.stressRisk}%`;
+      if (DOM.rcRiskSpeed) DOM.rcRiskSpeed.textContent = `${health.components.speedRisk}%`;
+    }
   }
   
   const rcTyreTemp = document.getElementById('rc-tyre-temp');
-  if (rcTyreTemp && u.tyreTemp) {
+  if (u.tyreTemp) {
     const tempVal = Math.round(u.tyreTemp);
     const win = COMPOUND_THERMAL_WINDOWS[u.compound] || COMPOUND_THERMAL_WINDOWS.MEDIUM;
     let statusText = 'OPT';
@@ -1007,8 +1050,14 @@ function updateUI() {
       statusText = 'WARM';
       statusColor = 'var(--amber)';
     }
-    rcTyreTemp.textContent = `${tempVal}°C (${statusText})`;
-    rcTyreTemp.style.color = statusColor;
+    if (rcTyreTemp) {
+      rcTyreTemp.textContent = `${tempVal}°C (${statusText})`;
+      rcTyreTemp.style.color = statusColor;
+    }
+    if (DOM.rcPanelTyreTemp) {
+      DOM.rcPanelTyreTemp.textContent = `${tempVal}°C (${statusText})`;
+      DOM.rcPanelTyreTemp.style.color = statusColor;
+    }
   }
   
   // Gaps

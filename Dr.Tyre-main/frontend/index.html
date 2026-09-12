@@ -497,45 +497,19 @@
               </div>
             </div>
 
-            <!-- SPEED RESIDUAL & TYRE HEALTH PANEL -->
-            <div style="display: grid; grid-template-columns: 1fr 1.35fr; gap: 8px; margin-bottom: 14px;">
-              <!-- SPEED RESIDUAL -->
-              <div style="background: var(--color-paper-white); border: 1px solid rgba(0,0,0,0.15); padding: 8px; border-radius: 6px;">
-                <div style="font-size: 0.65rem; color: var(--color-carbon); font-weight: 900; letter-spacing: 0.5px; margin-bottom: 4px;">SPEED RESIDUAL</div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.72rem;"><span style="color:var(--text-muted)">Actual</span><span id="rc-res-actual" style="font-weight:700;">--</span></div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.72rem;"><span style="color:var(--text-muted)">Expected</span><span id="rc-res-expected" style="font-weight:700;">--</span></div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-top: 4px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 4px;">
-                  <span style="color:var(--text-muted)">Residual</span><strong id="rc-res-val">--</strong>
-                </div>
-                <!-- Preserved legacy elements for compatibility -->
-                <div style="display:none;"><span id="rc-tyre-temp"></span><span id="rc-stress-val"></span><span id="rc-delta"></span><span id="rc-deg-rate"></span></div>
+            <!-- SPEED RESIDUAL -->
+            <div style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); padding: 10px; border-radius: 6px; margin-bottom: 14px; box-shadow: 0 2px 0 rgba(0,0,0,0.04);">
+              <div style="font-size: 0.68rem; color: var(--color-carbon); font-weight: 900; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; justify-content: space-between;">
+                <span>SPEED RESIDUAL</span>
+                <span style="font-size:0.62rem; color:var(--text-muted); font-weight:700;">TELEMETRY PACING</span>
               </div>
-
-              <!-- 5-INDICATOR TYRE HEALTH -->
-              <div style="background: var(--color-paper-white); border: 1px solid rgba(0,0,0,0.15); padding: 8px 10px; border-radius: 6px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <span style="font-size: 0.68rem; color: var(--color-carbon); font-weight: 900; letter-spacing: 0.5px;">TYRE HEALTH</span>
-                  <span id="rc-puncture-badge" style="font-size: 0.62rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; border: 1px solid #16a34a; background: rgba(22,163,74,0.12); color: #16a34a;">
-                    8% LOW
-                  </span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 2px;">
-                  <span style="color:var(--text-muted); font-weight: 600;">GRIP LEVEL</span>
-                  <strong id="rc-health-grip" style="color:var(--green); font-family:var(--font-mono);">100%</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 2px;">
-                  <span style="color:var(--text-muted); font-weight: 600;">TREAD REMAINING</span>
-                  <strong id="rc-health-tread" style="color:var(--color-carbon); font-family:var(--font-mono);">100%</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 2px;">
-                  <span style="color:var(--text-muted); font-weight: 600;">DEGRADATION RATE</span>
-                  <strong id="rc-health-deg-rate" style="color:var(--color-carbon); font-family:var(--font-mono);">+0.050 s/lap</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.72rem;">
-                  <span style="color:var(--text-muted); font-weight: 600;">TYRE ENERGY</span>
-                  <strong id="rc-health-energy" style="color:var(--color-carbon); font-family:var(--font-mono);">30 LAPS</strong>
-                </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 3px;"><span style="color:var(--text-muted)">Actual Track Speed</span><span id="rc-res-actual" style="font-weight:700;">--</span></div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;"><span style="color:var(--text-muted)">Expected Physics Speed</span><span id="rc-res-expected" style="font-weight:700;">--</span></div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.78rem; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 5px;">
+                <span style="color:var(--text-muted); font-weight: 700;">Residual Delta</span><strong id="rc-res-val">--</strong>
               </div>
+              <!-- Preserved legacy elements for compatibility -->
+              <div style="display:none;"><span id="rc-tyre-temp"></span><span id="rc-stress-val"></span><span id="rc-delta"></span><span id="rc-deg-rate"></span></div>
             </div>
 
             <!-- GAPS -->
@@ -555,9 +529,87 @@
             <div id="track-canvas-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
           </div>
 
-          <div class="rc-panel rc-events">
-            <h3>RACE EVENTS</h3>
-            <div class="event-list" id="event-list"></div>
+          <!-- TYRE HEALTH PANEL (Replacing Race Events) -->
+          <div class="rc-panel rc-health-panel" style="width: 100%; display: flex; flex-direction: column; overflow-y: auto; padding: 14px; background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); box-shadow: 0 4px 0 var(--color-carbon); border-radius: var(--radius-sm); box-sizing: border-box;">
+            
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--color-carbon); padding-bottom: 8px; margin-bottom: 12px;">
+              <div>
+                <h3 style="margin: 0; font-size: 0.95rem; font-weight: 900; letter-spacing: 0.5px; color: var(--color-carbon);">TYRE HEALTH</h3>
+                <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700; margin-top: 1px;">DIAGNOSTICS &amp; RISK ENGINE</div>
+              </div>
+              <span id="rc-panel-tyre-badge" style="font-size: 0.68rem; font-weight: 800; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--color-carbon); background: #fef08a; color: #000;">MEDIUM</span>
+            </div>
+
+            <!-- 1. Puncture Risk Section -->
+            <div style="background: rgba(0,0,0,0.03); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.68rem; font-weight: 900; letter-spacing: 0.5px; color: var(--color-carbon);">PUNCTURE RISK ESTIMATE</span>
+                <span id="rc-puncture-badge" style="font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; border: 1px solid #16a34a; background: rgba(22, 163, 74, 0.12); color: #16a34a;">
+                  8% LOW
+                </span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px;">
+                <div id="rc-panel-puncture-score" style="font-size: 2.2rem; font-weight: 900; font-family: var(--font-mono); color: var(--green); line-height: 1;">8%</div>
+                <span id="rc-panel-puncture-level" style="font-size: 0.75rem; font-weight: 800; color: var(--green);">LOW HAZARD</span>
+              </div>
+
+              <!-- 6 Component Micro-Indicators -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.62rem;">
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--text-muted)">Age Risk:</span><strong id="rc-risk-age">0%</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--text-muted)">Cliff Risk:</span><strong id="rc-risk-cliff">0%</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--text-muted)">Thermal Risk:</span><strong id="rc-risk-thermal">0%</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--text-muted)">Blister Risk:</span><strong id="rc-risk-blister">0%</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--text-muted)">Stress Load:</span><strong id="rc-risk-stress">0%</strong></div>
+                <div style="display: flex; justify-content: space-between;"><span style="color:var(--text-muted)">Speed Load:</span><strong id="rc-risk-speed">0%</strong></div>
+              </div>
+            </div>
+
+            <!-- 2. Core Health Indicators: Grip & Tread Bars -->
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+              <!-- Grip Level -->
+              <div style="background: var(--color-paper-white); border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 8px 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-size: 0.68rem; font-weight: 800; color: var(--color-carbon);">GRIP LEVEL</span>
+                  <strong id="rc-health-grip" style="font-size: 1.1rem; font-weight: 900; color: var(--green); font-family: var(--font-mono);">100%</strong>
+                </div>
+                <div style="height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; overflow: hidden;">
+                  <div id="rc-panel-grip-bar" style="height: 100%; width: 100%; background: var(--green); transition: width 0.2s;"></div>
+                </div>
+                <div style="font-size: 0.58rem; color: var(--text-muted); margin-top: 3px; font-weight: 600;">Usable performance envelope</div>
+              </div>
+
+              <!-- Tread Remaining -->
+              <div style="background: var(--color-paper-white); border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 8px 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-size: 0.68rem; font-weight: 800; color: var(--color-carbon);">TREAD REMAINING</span>
+                  <strong id="rc-health-tread" style="font-size: 1.1rem; font-weight: 900; color: var(--color-carbon); font-family: var(--font-mono);">100%</strong>
+                </div>
+                <div style="height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; overflow: hidden;">
+                  <div id="rc-panel-tread-bar" style="height: 100%; width: 100%; background: var(--color-carbon); transition: width 0.2s;"></div>
+                </div>
+                <div style="font-size: 0.58rem; color: var(--text-muted); margin-top: 3px; font-weight: 600;">Useful carcass life to cliff</div>
+              </div>
+            </div>
+
+            <!-- 3. Degradation Rate, Tyre Energy, and Thermal Summary -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+              <div style="background: var(--color-paper-white); border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 8px;">
+                <div style="font-size: 0.6rem; color: var(--text-muted); font-weight: 700; margin-bottom: 2px;">DEGRADATION RATE</div>
+                <strong id="rc-health-deg-rate" style="font-size: 0.95rem; font-weight: 900; color: var(--color-carbon); font-family: var(--font-mono);">+0.050 s/L</strong>
+              </div>
+              <div style="background: var(--color-paper-white); border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 8px;">
+                <div style="font-size: 0.6rem; color: var(--text-muted); font-weight: 700; margin-bottom: 2px;">TYRE ENERGY</div>
+                <strong id="rc-health-energy" style="font-size: 0.95rem; font-weight: 900; color: var(--color-carbon); font-family: var(--font-mono);">30 LAPS</strong>
+              </div>
+              <div style="grid-column: span 2; background: var(--color-paper-white); border: 1px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700;">TYRE TEMP:</span>
+                <strong id="rc-panel-tyre-temp" style="font-size: 0.85rem; font-weight: 800; color: var(--green);">100°C (OPTIMAL)</strong>
+              </div>
+            </div>
+
+            <!-- Hidden container for event-list compatibility -->
+            <div id="event-list" style="display: none;"></div>
           </div>
         </div>
 
