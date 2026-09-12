@@ -666,6 +666,9 @@
                 <button type="button" class="intel-tab-btn" data-intel-target="intel-trackmap">TRACK MAP</button>
                 <button type="button" class="intel-tab-btn" data-intel-target="intel-recovery">RECOVERY</button>
                 <button type="button" class="intel-tab-btn" data-intel-target="intel-opps">OPPS</button>
+                <button type="button" class="intel-tab-btn" data-intel-target="intel-battle">BATTLE</button>
+                <button type="button" class="intel-tab-btn" data-intel-target="intel-fingerprint">FINGERPRINT</button>
+                <button type="button" class="intel-tab-btn" data-intel-target="intel-infovalue">INFO VALUE</button>
               </div>
 
               <!-- ── FEATURE 1: 4-TYRE MATRIX TAB ── -->
@@ -844,6 +847,162 @@
                     </div>
                   </div>
                   <div id="rc-opp-secondary-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+                </div>
+              </div>
+
+              <!-- ── STRATEGIC FEATURE 1: BATTLE MANAGEMENT TAB ── -->
+              <div id="intel-battle" class="intel-sub-panel" style="display: none; flex-direction: column; gap: 6px;">
+                <div style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 8px;">
+                  <!-- Dynamic Decision Banner -->
+                  <div id="rc-battle-decision-badge" style="background: #dcfce7; border: 1.5px solid #22c55e; border-radius: 5px; padding: 5px 8px; font-weight: 900; font-size: 0.70rem; color: #166534; text-align: center; font-family: var(--font-mono);">
+                    DECISION: ATTACK IS WORTH THE TYRE COST
+                  </div>
+                  <div id="rc-battle-decision-reason" style="font-size: 0.60rem; color: var(--color-carbon); margin: 4px 0 6px 0; line-height: 1.25; font-family: var(--font-mono);">
+                    DRS tow and 68% overtake probability justify +0.038 s/lap tyre degradation investment.
+                  </div>
+
+                  <!-- Attack vs Manage Side-by-Side Comparison -->
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-family: var(--font-mono);">
+                    <!-- ATTACK COLUMN -->
+                    <div style="background: #fff7ed; border: 1px solid #fdba74; border-radius: 4px; padding: 5px;">
+                      <div style="font-size: 0.62rem; font-weight: 900; color: #c2410c; margin-bottom: 3px; border-bottom: 1px solid #fed7aa; padding-bottom: 2px;">ATTACK / PUSH</div>
+                      <div style="font-size: 0.58rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                        <span>Pace Gain:</span>
+                        <strong id="rc-battle-atk-gain" style="color: #16a34a;">+0.42s</strong>
+                      </div>
+                      <div style="font-size: 0.58rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 1px;">
+                        <span>Overtake P:</span>
+                        <strong id="rc-battle-atk-prob" style="color: #c2410c;">68%</strong>
+                      </div>
+                      <div style="font-size: 0.58rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 1px;">
+                        <span>Extra Deg:</span>
+                        <strong id="rc-battle-atk-deg" style="color: #dc2626;">+0.038 s/L</strong>
+                      </div>
+                    </div>
+
+                    <!-- MANAGE COLUMN -->
+                    <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 4px; padding: 5px;">
+                      <div style="font-size: 0.62rem; font-weight: 900; color: #15803d; margin-bottom: 3px; border-bottom: 1px solid #bbf7d0; padding-bottom: 2px;">MANAGE / SAVE</div>
+                      <div style="font-size: 0.58rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                        <span>Pace Loss:</span>
+                        <strong id="rc-battle-mng-loss" style="color: #ea580c;">-0.14s</strong>
+                      </div>
+                      <div style="font-size: 0.58rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 1px;">
+                        <span>Tyre Save:</span>
+                        <strong id="rc-battle-mng-save" style="color: #16a34a;">+0.031 s/L</strong>
+                      </div>
+                      <div style="font-size: 0.58rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 1px;">
+                        <span>Attack Pot:</span>
+                        <strong id="rc-battle-mng-pot" style="color: #15803d;">+62%</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── STRATEGIC FEATURE 2: TYRE FINGERPRINT TAB ── -->
+              <div id="intel-fingerprint" class="intel-sub-panel" style="display: none; flex-direction: column; gap: 6px;">
+                <div style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 8px; font-family: var(--font-mono);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 0.62rem; font-weight: 900; color: var(--color-carbon);">7-VECTOR TYRE PROFILE</span>
+                    <span id="rc-fp-compound-badge" style="font-size: 0.58rem; font-weight: 800; padding: 1px 4px; border-radius: 2px; background: #e0f2fe; color: #0369a1; border: 1px solid #0284c7;">MEDIUM (18L)</span>
+                  </div>
+
+                  <!-- 7 Attributes -->
+                  <div style="display: flex; flex-direction: column; gap: 3px; font-size: 0.60rem;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span style="width: 82px;">Warm-up:</span>
+                      <div style="flex: 1; height: 7px; background: #e2e8f0; border-radius: 2px; overflow: hidden; border: 1px solid var(--color-carbon);">
+                        <div id="rc-fp-bar-warmup" style="height: 100%; width: 72%; background: #0284c7;"></div>
+                      </div>
+                      <span id="rc-fp-val-warmup" style="width: 22px; font-weight: 900; text-align: right;">72</span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span style="width: 82px;">Peak Grip:</span>
+                      <div style="flex: 1; height: 7px; background: #e2e8f0; border-radius: 2px; overflow: hidden; border: 1px solid var(--color-carbon);">
+                        <div id="rc-fp-bar-grip" style="height: 100%; width: 91%; background: #16a34a;"></div>
+                      </div>
+                      <span id="rc-fp-val-grip" style="width: 22px; font-weight: 900; text-align: right;">91</span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span style="width: 82px;">Thermal Stress:</span>
+                      <div style="flex: 1; height: 7px; background: #e2e8f0; border-radius: 2px; overflow: hidden; border: 1px solid var(--color-carbon);">
+                        <div id="rc-fp-bar-thermal" style="height: 100%; width: 84%; background: #ea580c;"></div>
+                      </div>
+                      <span id="rc-fp-val-thermal" style="width: 22px; font-weight: 900; text-align: right;">84</span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span style="width: 82px;">Mechanical Wear:</span>
+                      <div style="flex: 1; height: 7px; background: #e2e8f0; border-radius: 2px; overflow: hidden; border: 1px solid var(--color-carbon);">
+                        <div id="rc-fp-bar-wear" style="height: 100%; width: 51%; background: #9333ea;"></div>
+                      </div>
+                      <span id="rc-fp-val-wear" style="width: 22px; font-weight: 900; text-align: right;">51</span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span style="width: 82px;">Sliding:</span>
+                      <div style="flex: 1; height: 7px; background: #e2e8f0; border-radius: 2px; overflow: hidden; border: 1px solid var(--color-carbon);">
+                        <div id="rc-fp-bar-sliding" style="height: 100%; width: 78%; background: #e11d48;"></div>
+                      </div>
+                      <span id="rc-fp-val-sliding" style="width: 22px; font-weight: 900; text-align: right;">78</span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span style="width: 82px;">Degradation:</span>
+                      <div style="flex: 1; height: 7px; background: #e2e8f0; border-radius: 2px; overflow: hidden; border: 1px solid var(--color-carbon);">
+                        <div id="rc-fp-bar-deg" style="height: 100%; width: 63%; background: #dc2626;"></div>
+                      </div>
+                      <span id="rc-fp-val-deg" style="width: 22px; font-weight: 900; text-align: right;">63</span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span style="width: 82px;">Recovery:</span>
+                      <div style="flex: 1; height: 7px; background: #e2e8f0; border-radius: 2px; overflow: hidden; border: 1px solid var(--color-carbon);">
+                        <div id="rc-fp-bar-rec" style="height: 100%; width: 38%; background: #059669;"></div>
+                      </div>
+                      <span id="rc-fp-val-rec" style="width: 22px; font-weight: 900; text-align: right;">38</span>
+                    </div>
+                  </div>
+
+                  <div id="rc-fp-comparison-note" style="margin-top: 6px; background: rgba(0,0,0,0.03); border-radius: 4px; padding: 4px 6px; font-size: 0.58rem; color: var(--color-carbon); line-height: 1.25;">
+                    Stint 1 Baseline: Monitoring live carcass behaviour.
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── STRATEGIC FEATURE 4: INFORMATION VALUE TAB ── -->
+              <div id="intel-infovalue" class="intel-sub-panel" style="display: none; flex-direction: column; gap: 6px;">
+                <div style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 8px; font-family: var(--font-mono);">
+                  <!-- Recommendation Banner -->
+                  <div id="rc-info-rec-badge" style="background: #e0f2fe; border: 1.5px solid #0284c7; border-radius: 5px; padding: 5px 8px; font-weight: 900; font-size: 0.70rem; color: #0369a1; text-align: center;">
+                    EXTEND 3 LAPS TO COLLECT TYRE DATA
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 6px; font-size: 0.58rem; background: rgba(0,0,0,0.03); padding: 5px; border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between;">
+                      <span style="color: var(--text-muted);">Uncertainty:</span>
+                      <strong id="rc-info-uncertainty" style="color: #ea580c;">HIGH (±0.12s)</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                      <span style="color: var(--text-muted);">Strategic Val:</span>
+                      <strong id="rc-info-strategic-val" style="color: #16a34a;">HIGH</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                      <span style="color: var(--text-muted);">Time Cost:</span>
+                      <strong id="rc-info-time-cost" style="color: var(--color-carbon);">+0.20s</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                      <span style="color: var(--text-muted);">Uncertainty Red:</span>
+                      <strong id="rc-info-reduction" style="color: #0284c7;">35%</strong>
+                    </div>
+                  </div>
+
+                  <div id="rc-info-reason" style="font-size: 0.60rem; color: var(--color-carbon); margin-top: 5px; line-height: 1.25;">
+                    Medium tyre degradation CI is wide. Extending 3 laps provides crucial telemetry to validate 1-stop feasibility.
+                  </div>
                 </div>
               </div>
 
@@ -1214,6 +1373,177 @@
             <button id="btn-close-why" class="btn-close">×</button>
           </div>
           <div class="modal-body" id="why-content"></div>
+        </div>
+      </div>
+
+      <!-- COMPETITOR STRATEGY MODAL (FEATURE 3) -->
+      <div id="competitor-strategy-modal" class="modal-overlay hidden" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 400; align-items: center; justify-content: center;">
+        <div class="modal-content" style="max-width: 680px; width: 95%; background: var(--color-paper-white); border: 2.5px solid var(--color-carbon); border-radius: 8px; box-shadow: 0 10px 0 var(--color-carbon); max-height: 90vh; overflow-y: auto;">
+          <div class="modal-header" style="background: #f8fafc; border-bottom: 2px solid var(--color-carbon); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.2rem;">🎯</span>
+              <h2 id="csm-title" style="font-family: var(--font-display); font-size: 1.05rem; font-weight: 900; color: var(--color-carbon); margin: 0; letter-spacing: 0.5px;">CAR 16 — STRATEGY PRESCRIPTION</h2>
+            </div>
+            <button id="csm-btn-close" class="btn-close" style="font-size: 1.4rem; cursor: pointer; border: none; background: none; color: var(--color-carbon); font-weight: 900;">×</button>
+          </div>
+          <div class="modal-body" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; font-family: var(--font-mono);">
+            
+            <!-- CURRENT TELEMETRY ROW -->
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; background: rgba(0,0,0,0.03); border: 1.5px solid var(--color-carbon); border-radius: 6px; padding: 8px;">
+              <div style="text-align: center;">
+                <div style="font-size: 0.60rem; color: var(--text-muted); font-weight: 700;">POS</div>
+                <strong id="csm-pos" style="font-size: 1.05rem; color: var(--color-carbon);">P8</strong>
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 0.60rem; color: var(--text-muted); font-weight: 700;">COMPOUND</div>
+                <span id="csm-compound" class="data-label" style="font-size: 0.70rem; padding: 2px 6px; font-weight: 800;">MEDIUM</span>
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 0.60rem; color: var(--text-muted); font-weight: 700;">TYRE AGE</div>
+                <strong id="csm-age" style="font-size: 0.95rem; color: var(--color-carbon);">18 LAPS</strong>
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 0.60rem; color: var(--text-muted); font-weight: 700;">DEG RATE</div>
+                <strong id="csm-deg-rate" style="font-size: 0.85rem; color: #dc2626;">+0.082 s/L</strong>
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 0.60rem; color: var(--text-muted); font-weight: 700;">TYRE TEMP</div>
+                <strong id="csm-temp" style="font-size: 0.95rem; color: var(--color-carbon);">103°C</strong>
+              </div>
+            </div>
+
+            <!-- OPTIMAL PIT & NEXT BEST ACTION -->
+            <div style="background: var(--color-paper-white); border: 2px solid var(--color-carbon); border-radius: 8px; padding: 12px; box-shadow: 0 3px 0 var(--color-carbon);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div>
+                  <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;">OPTIMAL PIT WINDOW</span>
+                  <div style="display: flex; align-items: baseline; gap: 8px;">
+                    <span id="csm-opt-lap" style="font-size: 1.35rem; font-weight: 900; color: var(--color-carbon);">LAP 27</span>
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">CONFIDENCE: <strong id="csm-conf" style="color: #16a34a;">82%</strong></span>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;">NEXT BEST ACTION</span>
+                  <div id="csm-action" style="font-size: 0.85rem; font-weight: 900; color: #b91c1c; background: #fee2e2; border: 1.5px solid #ef4444; padding: 3px 8px; border-radius: 4px; margin-top: 2px;">PIT IN 2 LAPS</div>
+                </div>
+              </div>
+
+              <!-- WHY IS THIS OPTIMAL -->
+              <div style="border-top: 1.5px dashed rgba(0,0,0,0.15); padding-top: 8px; margin-top: 6px;">
+                <div style="font-size: 0.68rem; font-weight: 800; color: var(--color-carbon); margin-bottom: 4px;">WHY IS THIS STRATEGY OPTIMAL?</div>
+                <ul id="csm-why-bullets" style="list-style: none; padding: 0; margin: 0;">
+                  <!-- Bullets injected dynamically -->
+                </ul>
+              </div>
+            </div>
+
+            <!-- OPPONENT INTENT PREDICTION MODEL -->
+            <div style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 8px; padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.72rem; font-weight: 900; color: var(--color-carbon); letter-spacing: 0.5px;">OPPONENT PIT INTENT PROBABILITY</span>
+                <span style="font-size: 0.60rem; font-weight: 700; color: var(--text-muted);">DYNAMIC PREDICTION MODEL</span>
+              </div>
+              
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Next 1 Lap -->
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.70rem;">
+                  <span style="width: 80px; font-weight: 700;">Next 1 lap:</span>
+                  <div style="flex: 1; height: 10px; background: #e2e8f0; border-radius: 3px; overflow: hidden; border: 1px solid var(--color-carbon);">
+                    <div id="csm-p1-bar" style="height: 100%; width: 18%; background: #ca8a04;"></div>
+                  </div>
+                  <span id="csm-p1-val" style="width: 36px; font-weight: 900; text-align: right;">18%</span>
+                </div>
+                <!-- Next 2 Laps -->
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.70rem;">
+                  <span style="width: 80px; font-weight: 700;">Next 2 laps:</span>
+                  <div style="flex: 1; height: 10px; background: #e2e8f0; border-radius: 3px; overflow: hidden; border: 1px solid var(--color-carbon);">
+                    <div id="csm-p2-bar" style="height: 100%; width: 67%; background: #ea580c;"></div>
+                  </div>
+                  <span id="csm-p2-val" style="width: 36px; font-weight: 900; text-align: right;">67%</span>
+                </div>
+                <!-- Next 3 Laps -->
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.70rem;">
+                  <span style="width: 80px; font-weight: 700;">Next 3 laps:</span>
+                  <div style="flex: 1; height: 10px; background: #e2e8f0; border-radius: 3px; overflow: hidden; border: 1px solid var(--color-carbon);">
+                    <div id="csm-p3-bar" style="height: 100%; width: 84%; background: #dc2626;"></div>
+                  </div>
+                  <span id="csm-p3-val" style="width: 36px; font-weight: 900; text-align: right;">84%</span>
+                </div>
+              </div>
+
+              <div id="csm-intent-reasoning" style="font-size: 0.68rem; color: var(--color-carbon); background: rgba(0,0,0,0.03); border-radius: 4px; padding: 6px 8px; margin-top: 8px; line-height: 1.3;">
+                Car 16 is likely to pit soon because its Medium tyre degradation has accelerated while the projected time loss from staying out exceeds the pit-lane cost.
+              </div>
+            </div>
+
+            <!-- OUR STRATEGIC RESPONSE -->
+            <div style="background: #f8fafc; border: 2px solid var(--color-carbon); border-radius: 8px; padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.70rem; font-weight: 900; color: var(--color-carbon);">RECOMMENDED TACTICAL RESPONSE (CAR 11)</span>
+                <span id="csm-response-badge" class="tactical-badge badge-cover" style="font-weight: 900; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; border: 1.5px solid #000;">COVER</span>
+              </div>
+              <p id="csm-response-reason" style="font-size: 0.72rem; color: var(--color-carbon); margin: 0; line-height: 1.35;">
+                If Car 16 pits now, covering within the next lap prevents the undercut.
+              </p>
+            </div>
+
+            <!-- MINI TYRE FINGERPRINT -->
+            <div style="background: var(--color-paper-white); border: 1.5px solid var(--color-carbon); border-radius: 8px; padding: 10px;">
+              <span style="font-size: 0.65rem; font-weight: 900; color: var(--text-muted); letter-spacing: 0.5px;">TYRE FINGERPRINT SNAPSHOT</span>
+              <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; text-align: center; font-size: 0.58rem;">
+                <div>
+                  <div style="color: var(--text-muted);">WARM</div>
+                  <div style="height: 34px; background: #e2e8f0; border: 1px solid #000; border-radius: 2px; display: flex; align-items: flex-end; margin-top: 2px;">
+                    <div id="csm-fp-warmup" style="width: 100%; height: 72%; background: #0284c7;"></div>
+                  </div>
+                  <strong id="csm-fp-warmup-val" style="color: #000;">72</strong>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted);">GRIP</div>
+                  <div style="height: 34px; background: #e2e8f0; border: 1px solid #000; border-radius: 2px; display: flex; align-items: flex-end; margin-top: 2px;">
+                    <div id="csm-fp-grip" style="width: 100%; height: 91%; background: #16a34a;"></div>
+                  </div>
+                  <strong id="csm-fp-grip-val" style="color: #000;">91</strong>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted);">HEAT</div>
+                  <div style="height: 34px; background: #e2e8f0; border: 1px solid #000; border-radius: 2px; display: flex; align-items: flex-end; margin-top: 2px;">
+                    <div id="csm-fp-thermal" style="width: 100%; height: 84%; background: #ea580c;"></div>
+                  </div>
+                  <strong id="csm-fp-thermal-val" style="color: #000;">84</strong>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted);">WEAR</div>
+                  <div style="height: 34px; background: #e2e8f0; border: 1px solid #000; border-radius: 2px; display: flex; align-items: flex-end; margin-top: 2px;">
+                    <div id="csm-fp-wear" style="width: 100%; height: 51%; background: #9333ea;"></div>
+                  </div>
+                  <strong id="csm-fp-wear-val" style="color: #000;">51</strong>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted);">SLIP</div>
+                  <div style="height: 34px; background: #e2e8f0; border: 1px solid #000; border-radius: 2px; display: flex; align-items: flex-end; margin-top: 2px;">
+                    <div id="csm-fp-slide" style="width: 100%; height: 78%; background: #e11d48;"></div>
+                  </div>
+                  <strong id="csm-fp-slide-val" style="color: #000;">78</strong>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted);">DEG</div>
+                  <div style="height: 34px; background: #e2e8f0; border: 1px solid #000; border-radius: 2px; display: flex; align-items: flex-end; margin-top: 2px;">
+                    <div id="csm-fp-deg" style="width: 100%; height: 63%; background: #dc2626;"></div>
+                  </div>
+                  <strong id="csm-fp-deg-val" style="color: #000;">63</strong>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted);">REC</div>
+                  <div style="height: 34px; background: #e2e8f0; border: 1px solid #000; border-radius: 2px; display: flex; align-items: flex-end; margin-top: 2px;">
+                    <div id="csm-fp-rec" style="width: 100%; height: 38%; background: #059669;"></div>
+                  </div>
+                  <strong id="csm-fp-rec-val" style="color: #000;">38</strong>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
     

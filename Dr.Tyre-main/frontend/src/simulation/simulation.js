@@ -26,6 +26,9 @@ import { updateDynamicDegradation } from './dynamicDegradation.js';
 import { computeTrackDegradationMap, getActiveTrackSegment } from './trackDegradationMap.js';
 import { evaluateTyreRecovery } from './tyreRecovery.js';
 import { detectRaceOpportunities } from './opportunityDetector.js';
+import { evaluateBattleManagement } from './battleManagement.js';
+import { computeTyreFingerprint, archiveStintFingerprint } from './tyreFingerprint.js';
+import { evaluateInformationValue } from './informationValue.js';
 
 let modelData = null;
 let telemetryData = null;
@@ -245,6 +248,42 @@ export function initSimulation(data, telData) {
   DOM.rcOppPrimaryReason = document.getElementById('rc-opp-primary-reason');
   DOM.rcOppSecondaryList = document.getElementById('rc-opp-secondary-list');
   
+  // Strategic Feature 1: Battle Management
+  DOM.rcBattleDecisionBadge = document.getElementById('rc-battle-decision-badge');
+  DOM.rcBattleDecisionReason = document.getElementById('rc-battle-decision-reason');
+  DOM.rcBattleAtkGain = document.getElementById('rc-battle-atk-gain');
+  DOM.rcBattleAtkProb = document.getElementById('rc-battle-atk-prob');
+  DOM.rcBattleAtkDeg = document.getElementById('rc-battle-atk-deg');
+  DOM.rcBattleMngLoss = document.getElementById('rc-battle-mng-loss');
+  DOM.rcBattleMngSave = document.getElementById('rc-battle-mng-save');
+  DOM.rcBattleMngPot = document.getElementById('rc-battle-mng-pot');
+
+  // Strategic Feature 2: Tyre Fingerprint
+  DOM.rcFpCompoundBadge = document.getElementById('rc-fp-compound-badge');
+  DOM.rcFpBarWarmup = document.getElementById('rc-fp-bar-warmup');
+  DOM.rcFpValWarmup = document.getElementById('rc-fp-val-warmup');
+  DOM.rcFpBarGrip = document.getElementById('rc-fp-bar-grip');
+  DOM.rcFpValGrip = document.getElementById('rc-fp-val-grip');
+  DOM.rcFpBarThermal = document.getElementById('rc-fp-bar-thermal');
+  DOM.rcFpValThermal = document.getElementById('rc-fp-val-thermal');
+  DOM.rcFpBarWear = document.getElementById('rc-fp-bar-wear');
+  DOM.rcFpValWear = document.getElementById('rc-fp-val-wear');
+  DOM.rcFpBarSliding = document.getElementById('rc-fp-bar-sliding');
+  DOM.rcFpValSliding = document.getElementById('rc-fp-val-sliding');
+  DOM.rcFpBarDeg = document.getElementById('rc-fp-bar-deg');
+  DOM.rcFpValDeg = document.getElementById('rc-fp-val-deg');
+  DOM.rcFpBarRec = document.getElementById('rc-fp-bar-rec');
+  DOM.rcFpValRec = document.getElementById('rc-fp-val-rec');
+  DOM.rcFpComparisonNote = document.getElementById('rc-fp-comparison-note');
+
+  // Strategic Feature 4: Information Value
+  DOM.rcInfoRecBadge = document.getElementById('rc-info-rec-badge');
+  DOM.rcInfoUncertainty = document.getElementById('rc-info-uncertainty');
+  DOM.rcInfoStrategicVal = document.getElementById('rc-info-strategic-val');
+  DOM.rcInfoTimeCost = document.getElementById('rc-info-time-cost');
+  DOM.rcInfoReduction = document.getElementById('rc-info-reduction');
+  DOM.rcInfoReason = document.getElementById('rc-info-reason');
+
   bindEvents();
 }
 
@@ -632,6 +671,10 @@ function simulationLoop(now) {
           car.pitState = 'STOP';
           car.stopTimer = 0;
           
+          if (car.tyreFingerprint) {
+            archiveStintFingerprint(car, car.tyreFingerprint);
+          }
+
           car.compound = car.targetCompound;
           car.tyreAge = 0; 
           const newWin = COMPOUND_THERMAL_WINDOWS[car.compound] || COMPOUND_THERMAL_WINDOWS.MEDIUM;
@@ -1234,24 +1277,28 @@ function updateUI() {
     }
   }
   
-  // Gaps
+  // Gaps & Rivals
   const userIdx = state.cars.findIndex(c => c.isUser);
+  let rivalAhead = null;
+  let rivalBehind = null;
+
   if (userIdx > 0) {
-    const ahead = state.cars[userIdx - 1];
-    // Gap approx based on progress diff * laptime
-    const gap = (ahead.progress - u.progress) + (ahead.lapsCompleted - u.lapsCompleted);
-    DOM.gapAheadCar.textContent = `P${ahead.position} (#${ahead.number})`;
-    DOM.gapAheadTime.textContent = `+${(gap * getBaseLapTime()).toFixed(1)}s`;
+    rivalAhead = state.cars[userIdx - 1];
+    const gap = (rivalAhead.progress - u.progress) + (rivalAhead.lapsCompleted - u.lapsCompleted);
+    rivalAhead.gapToAhead = Math.max(0, gap * getBaseLapTime());
+    DOM.gapAheadCar.textContent = `P${rivalAhead.position} (#${rivalAhead.number})`;
+    DOM.gapAheadTime.textContent = `+${rivalAhead.gapToAhead.toFixed(1)}s`;
   } else {
     DOM.gapAheadCar.textContent = 'LEADER';
     DOM.gapAheadTime.textContent = '-';
   }
   
   if (userIdx < state.cars.length - 1) {
-    const behind = state.cars[userIdx + 1];
-    const gap = (u.progress - behind.progress) + (behind.lapsCompleted - u.lapsCompleted);
-    DOM.gapBehindCar.textContent = `P${behind.position} (#${behind.number})`;
-    DOM.gapBehindTime.textContent = `-${(gap * getBaseLapTime()).toFixed(1)}s`;
+    rivalBehind = state.cars[userIdx + 1];
+    const gap = (u.progress - rivalBehind.progress) + (rivalBehind.lapsCompleted - u.lapsCompleted);
+    rivalBehind.gapToBehind = Math.max(0, gap * getBaseLapTime());
+    DOM.gapBehindCar.textContent = `P${rivalBehind.position} (#${rivalBehind.number})`;
+    DOM.gapBehindTime.textContent = `-${rivalBehind.gapToBehind.toFixed(1)}s`;
   } else {
     DOM.gapBehindCar.textContent = 'LAST';
     DOM.gapBehindTime.textContent = '-';
@@ -1483,7 +1530,78 @@ function updateUI() {
       `).join('');
     }
   }
-  
+
+  // ── Strategic Feature 1: Battle-Aware Tyre Management ──
+  const battleReport = evaluateBattleManagement(u, rivalAhead, rivalBehind, state.lap, state.totalLaps, modelData);
+  u.battleManagement = battleReport;
+  if (DOM.rcBattleDecisionBadge) {
+    DOM.rcBattleDecisionBadge.textContent = battleReport.decision;
+    DOM.rcBattleDecisionBadge.style.color = battleReport.isWorthCost ? '#166534' : (battleReport.decisionClass === 'critical' ? '#991b1b' : '#1e3a8a');
+    DOM.rcBattleDecisionBadge.style.background = battleReport.isWorthCost ? '#dcfce7' : (battleReport.decisionClass === 'critical' ? '#fee2e2' : '#dbeafe');
+    DOM.rcBattleDecisionBadge.style.borderColor = battleReport.isWorthCost ? '#22c55e' : (battleReport.decisionClass === 'critical' ? '#ef4444' : '#3b82f6');
+  }
+  if (DOM.rcBattleDecisionReason) DOM.rcBattleDecisionReason.textContent = battleReport.decisionReason;
+  if (DOM.rcBattleAtkGain) DOM.rcBattleAtkGain.textContent = `+${battleReport.attack.lapGain.toFixed(2)}s`;
+  if (DOM.rcBattleAtkProb) DOM.rcBattleAtkProb.textContent = `${battleReport.attack.overtakeProbability}%`;
+  if (DOM.rcBattleAtkDeg) DOM.rcBattleAtkDeg.textContent = `+${battleReport.attack.tyreCost.toFixed(3)} s/L`;
+  if (DOM.rcBattleMngLoss) DOM.rcBattleMngLoss.textContent = `-${battleReport.manage.lapLoss.toFixed(2)}s`;
+  if (DOM.rcBattleMngSave) DOM.rcBattleMngSave.textContent = `+${battleReport.manage.tyreSaving.toFixed(3)} s/L`;
+  if (DOM.rcBattleMngPot) DOM.rcBattleMngPot.textContent = `+${battleReport.manage.futureAttackPotential}%`;
+
+  // ── Strategic Feature 2: Tyre Fingerprint Engine ──
+  const fpReport = computeTyreFingerprint(u, modelData);
+  u.tyreFingerprint = fpReport;
+  const fp = fpReport.fingerprint;
+  if (DOM.rcFpCompoundBadge) DOM.rcFpCompoundBadge.textContent = `${u.compound} (${Math.max(1, u.tyreAge)}L)`;
+  if (DOM.rcFpBarWarmup) DOM.rcFpBarWarmup.style.width = `${fp.warmup}%`;
+  if (DOM.rcFpValWarmup) DOM.rcFpValWarmup.textContent = fp.warmup;
+  if (DOM.rcFpBarGrip) DOM.rcFpBarGrip.style.width = `${fp.peakGrip}%`;
+  if (DOM.rcFpValGrip) DOM.rcFpValGrip.textContent = fp.peakGrip;
+  if (DOM.rcFpBarThermal) DOM.rcFpBarThermal.style.width = `${fp.thermalStress}%`;
+  if (DOM.rcFpValThermal) DOM.rcFpValThermal.textContent = fp.thermalStress;
+  if (DOM.rcFpBarWear) DOM.rcFpBarWear.style.width = `${fp.mechanicalWear}%`;
+  if (DOM.rcFpValWear) DOM.rcFpValWear.textContent = fp.mechanicalWear;
+  if (DOM.rcFpBarSliding) DOM.rcFpBarSliding.style.width = `${fp.sliding}%`;
+  if (DOM.rcFpValSliding) DOM.rcFpValSliding.textContent = fp.sliding;
+  if (DOM.rcFpBarDeg) DOM.rcFpBarDeg.style.width = `${fp.degradation}%`;
+  if (DOM.rcFpValDeg) DOM.rcFpValDeg.textContent = fp.degradation;
+  if (DOM.rcFpBarRec) DOM.rcFpBarRec.style.width = `${fp.recovery}%`;
+  if (DOM.rcFpValRec) DOM.rcFpValRec.textContent = fp.recovery;
+  if (DOM.rcFpComparisonNote) {
+    if (fpReport.comparison && fpReport.comparison.notes.length > 0) {
+      DOM.rcFpComparisonNote.textContent = fpReport.comparison.notes.join(' ');
+      DOM.rcFpComparisonNote.style.color = '#1e3a8a';
+    } else {
+      DOM.rcFpComparisonNote.textContent = `Stint ${u.pitStops + 1} (${u.compound}): Monitoring live carcass telemetry and operating window.`;
+      DOM.rcFpComparisonNote.style.color = 'var(--color-carbon)';
+    }
+  }
+
+  // ── Strategic Feature 4: Information Value Engine ──
+  const infoReport = evaluateInformationValue(u, state.lap, state.totalLaps, modelData);
+  u.informationValue = infoReport;
+  if (DOM.rcInfoRecBadge) {
+    DOM.rcInfoRecBadge.textContent = infoReport.recommendation;
+    if (infoReport.isSafetyCritical) {
+      DOM.rcInfoRecBadge.style.color = '#991b1b';
+      DOM.rcInfoRecBadge.style.background = '#fee2e2';
+      DOM.rcInfoRecBadge.style.borderColor = '#ef4444';
+    } else if (infoReport.lapsToExtend > 0) {
+      DOM.rcInfoRecBadge.style.color = '#0369a1';
+      DOM.rcInfoRecBadge.style.background = '#e0f2fe';
+      DOM.rcInfoRecBadge.style.borderColor = '#0284c7';
+    } else {
+      DOM.rcInfoRecBadge.style.color = '#166534';
+      DOM.rcInfoRecBadge.style.background = '#dcfce7';
+      DOM.rcInfoRecBadge.style.borderColor = '#22c55e';
+    }
+  }
+  if (DOM.rcInfoUncertainty) DOM.rcInfoUncertainty.textContent = `${infoReport.uncertaintyLevel} (±${infoReport.uncertaintyBand.toFixed(3)}s)`;
+  if (DOM.rcInfoStrategicVal) DOM.rcInfoStrategicVal.textContent = infoReport.strategicUsefulness;
+  if (DOM.rcInfoTimeCost) DOM.rcInfoTimeCost.textContent = `+${infoReport.expectedTimeCost.toFixed(2)}s`;
+  if (DOM.rcInfoReduction) DOM.rcInfoReduction.textContent = `${infoReport.uncertaintyReductionPct}%`;
+  if (DOM.rcInfoReason) DOM.rcInfoReason.textContent = infoReport.reason;
+
   if (DOM.engOptLap) {
     if (rx.optimalLap === 'N/A' || !rx.optimalLap) {
       DOM.engOptLap.textContent = 'N/A';
