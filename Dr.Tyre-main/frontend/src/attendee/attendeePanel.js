@@ -700,7 +700,10 @@ function updateAttendeePanel(simState) {
         treadEl.style.color = health.treadRemaining > 50 ? 'var(--color-carbon)' : (health.treadRemaining > 20 ? 'var(--amber)' : 'var(--red)');
       }
       const degRateEl = document.getElementById(`attendee-deg-rate-${index}`);
-      if (degRateEl) degRateEl.textContent = health.degRateFormatted;
+      if (degRateEl) {
+        degRateEl.textContent = health.degRateFormatted;
+        degRateEl.title = `Prediction Confidence: ${health.degConfidenceScore}% (${health.degConfidenceLevel})`;
+      }
       const energyEl = document.getElementById(`attendee-tyre-energy-${index}`);
       if (energyEl) energyEl.textContent = health.tyreEnergyText;
       const punctBadge = document.getElementById(`attendee-puncture-badge-${index}`);

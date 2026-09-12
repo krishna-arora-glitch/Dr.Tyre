@@ -364,7 +364,11 @@ function renderCompetitorStrategyModal(car, simState) {
   }
 
   const confEl = document.getElementById('csm-conf');
-  if (confEl) confEl.textContent = `${oppReport.prescription.confidenceScore}%`;
+  if (confEl) {
+    const score = oppReport.prescription.confidenceScore || 75;
+    const level = oppReport.prescription.confidenceLevel || (score >= 80 ? 'HIGH' : score >= 60 ? 'MEDIUM' : 'LOW');
+    confEl.textContent = `${score}% ${level}`;
+  }
 
   const actionEl = document.getElementById('csm-action');
   if (actionEl) actionEl.textContent = oppReport.prescription.nextBestAction;
@@ -399,10 +403,21 @@ function renderCompetitorStrategyModal(car, simState) {
     p3Val.textContent = `${oppReport.intent.p3}%`;
   }
 
-  // Intent Reasoning
+  // Opponent Intent Prediction Confidence
+  const intentConfEl = document.getElementById('csm-intent-conf');
+  if (intentConfEl) {
+    const iScore = oppReport.intent.confidenceScore || oppReport.prescription.confidenceScore || 75;
+    const iLevel = oppReport.intent.confidenceLevel || (iScore >= 80 ? 'HIGH' : iScore >= 60 ? 'MEDIUM' : 'LOW');
+    intentConfEl.textContent = `${iScore}% ${iLevel}`;
+    intentConfEl.className = iLevel === 'HIGH' ? 'conf-high' : (iLevel === 'MEDIUM' ? 'conf-medium' : 'conf-low');
+  }
+
+  // Intent Reasoning with evidence explanation
   const reasoningEl = document.getElementById('csm-intent-reasoning');
   if (reasoningEl) {
-    reasoningEl.textContent = oppReport.intent.intentReasoning;
+    const baseReason = oppReport.intent.intentReasoning;
+    const confReason = oppReport.intent.confidenceReason ? ` Evidence: ${oppReport.intent.confidenceReason}` : '';
+    reasoningEl.textContent = `${baseReason}${confReason}`;
   }
 
   // Tactical Response Badge & Reason

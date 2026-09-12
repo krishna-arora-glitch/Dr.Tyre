@@ -1,4 +1,5 @@
-import { COMPOUND_THERMAL_WINDOWS, calculateThermalPenalty, getCompoundCliffLap, getMarginalDegRate, getDegradationDelta, getSimulationLapStress } from './strategy.js';
+import { COMPOUND_THERMAL_WINDOWS, calculateThermalPenalty, getCompoundCliffLap, getMarginalDegRate, getDegradationDelta, getSimulationLapStress, getDegradationUncertainty } from './strategy.js';
+import { calculatePredictionConfidence } from './predictionConfidence.js';
 
 export function computeTyreHealth(car, modelData = null) {
   const compound = car.compound || 'MEDIUM';
@@ -12,6 +13,25 @@ export function computeTyreHealth(car, modelData = null) {
   const cliffLap = getCompoundCliffLap(compound);
   const degDelta = getDegradationDelta(compound, tyreAge, setup, thermalState, aeroInterference);
   const marginalDegRate = getMarginalDegRate(compound, tyreAge, setup);
+  const degUncertainty = getDegradationUncertainty(compound, tyreAge, setup);
+
+  // Authoritative Prediction Confidence Engine evaluation for Tyre Health
+  const confidenceEval = calculatePredictionConfidence({
+    compound,
+    tyreAge,
+    setup,
+    thermalState,
+    lapsObserved: tyreAge,
+    trafficRisk: car.trafficRisk || (car.inDirtyAir ? 'HIGH' : 'LOW'),
+    driverBehaviour: car.driverBehaviour,
+    uncertaintyBand: degUncertainty
+  });
+
+  const degConfidenceScore = confidenceEval.score;
+  const degConfidenceLevel = confidenceEval.level;
+  const gripConfidenceScore = Math.min(100, Math.max(30, Math.round(confidenceEval.score * 0.96)));
+  const treadConfidenceScore = Math.min(100, Math.max(40, Math.round(confidenceEval.score * 1.02)));
+  const energyConfidenceScore = Math.min(100, Math.max(25, Math.round(confidenceEval.score * 0.92)));
   
   const win = COMPOUND_THERMAL_WINDOWS[compound] || COMPOUND_THERMAL_WINDOWS.MEDIUM;
   const tyreTemp = thermalState?.tyreTemp !== undefined ? thermalState.tyreTemp : (car.tyreTemp || win.opt);
@@ -59,7 +79,8 @@ export function computeTyreHealth(car, modelData = null) {
   const treadRemaining = Math.round(Math.max(0, Math.min(100, 100 * treadFraction)));
 
   // ── C. DEGRADATION RATE (s/lap) ──
-  const degRateFormatted = `${marginalDegRate >= 0 ? '+' : ''}${marginalDegRate.toFixed(3)} s/lap`;
+  const degUncertaintyFormatted = `±${degUncertainty.toFixed(3)}`;
+  const degRateFormatted = `${marginalDegRate >= 0 ? '+' : ''}${marginalDegRate.toFixed(3)} s/lap ${degUncertaintyFormatted}`;
 
   // ── D. TYRE ENERGY (Laps remaining) ──
   // Useful life before exceeding acceptable envelope, modulated by thermal & stress acceleration
@@ -147,6 +168,7 @@ export function computeTyreHealth(car, modelData = null) {
     treadRemaining,
     marginalDegRate,
     degRateFormatted,
+    degUncertaintyFormatted,
     tyreEnergyLaps,
     tyreEnergyText,
     punctureRiskScore,
@@ -156,6 +178,13 @@ export function computeTyreHealth(car, modelData = null) {
     survivalProbability: Math.round(survivalProb * 100),
     hazardRatio: parseFloat(hazardMultiplier.toFixed(2)),
     baselineHazard: parseFloat(H0.toFixed(3)),
+    degUncertainty,
+    degConfidenceScore,
+    degConfidenceLevel,
+    gripConfidenceScore,
+    treadConfidenceScore,
+    energyConfidenceScore,
+    confidence: confidenceEval,
     components: {
       ageRisk: Math.round(ageRisk * 100),
       cliffRisk: Math.round(cliffRisk * 100),

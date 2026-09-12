@@ -12,6 +12,7 @@
  */
 
 import { getDegradationUncertainty, getMarginalDegRate, getCompoundCliffLap, COMPOUND_THERMAL_WINDOWS } from './strategy.js';
+import { calculatePredictionConfidence } from './predictionConfidence.js';
 
 /**
  * Evaluates the Information Value of extending the current stint by 1-3 laps.
@@ -41,6 +42,8 @@ export function evaluateInformationValue(car, currentLap, totalLaps, modelData =
       status: 'SAFETY CRITICAL — NO DATA EXTENSION',
       uncertaintyLevel: 'IRRELEVANT (SAFETY FIRST)',
       uncertaintyBand: 0.0,
+      confidenceScore: 70,
+      confidenceLevel: 'MEDIUM',
       expectedTimeCost: 99.0,
       uncertaintyReductionPct: 0,
       strategicUsefulness: 'LOW',
@@ -58,16 +61,31 @@ export function evaluateInformationValue(car, currentLap, totalLaps, modelData =
   const degUncertainty = getDegradationUncertainty(compound, tyreAge, setup);
   const baseDegRate = getMarginalDegRate(compound, tyreAge, setup);
 
+  // Authoritative Prediction Confidence evaluation
+  const confidenceEval = calculatePredictionConfidence({
+    compound,
+    tyreAge,
+    setup,
+    thermalState,
+    lapsObserved: tyreAge,
+    trafficRisk: car.trafficRisk || (car.inDirtyAir ? 'HIGH' : 'LOW'),
+    driverBehaviour: car.driverBehaviour,
+    uncertaintyBand: degUncertainty
+  });
+
+  const confidenceScore = confidenceEval.score;
+  const confidenceLevel = confidenceEval.level;
+
   // 3. Observed laps and Compound Information State
   // New stints or rare compounds have fewer observations and wider variance
   const observedLaps = tyreAge;
   let compoundTrust = 'MEDIUM';
   let uncertaintyLevel = 'MEDIUM';
 
-  if (degUncertainty > 0.12 || observedLaps < 5) {
+  if (confidenceScore < 60 || degUncertainty > 0.12 || observedLaps < 5) {
     uncertaintyLevel = 'HIGH';
     compoundTrust = 'LOW';
-  } else if (degUncertainty < 0.05 && observedLaps >= 14) {
+  } else if (confidenceScore >= 80 || (degUncertainty < 0.05 && observedLaps >= 14)) {
     uncertaintyLevel = 'LOW';
     compoundTrust = 'HIGH';
   }
@@ -119,6 +137,9 @@ export function evaluateInformationValue(car, currentLap, totalLaps, modelData =
     status: 'ACTIVE MONITORING',
     uncertaintyLevel,
     compoundTrust,
+    confidenceScore,
+    confidenceLevel,
+    confidenceReasons: confidenceEval.reasons,
     uncertaintyBand: Math.round(degUncertainty * 1000) / 1000,
     expectedTimeCost,
     uncertaintyReductionPct,
@@ -128,8 +149,10 @@ export function evaluateInformationValue(car, currentLap, totalLaps, modelData =
     lapsToExtend,
     recommendation,
     reason: (lapsToExtend > 0)
-      ? `${compound} degradation CI is wide (±${degUncertainty.toFixed(3)}s). Extending ${lapsToExtend} laps reduces degradation variance by ~${uncertaintyReductionPct}% to optimize subsequent stint windows.`
-      : `Degradation uncertainty is sufficiently bounded (±${degUncertainty.toFixed(3)}s) or race horizon is short. Proceed with scheduled pit window.`,
+      ? `${compound} degradation CI is wide (±${degUncertainty.toFixed(3)}s, Confidence ${confidenceScore}% ${confidenceLevel}). Extending ${lapsToExtend} laps reduces degradation variance by ~${uncertaintyReductionPct}% to optimize subsequent stint windows.`
+      : (confidenceScore >= 80)
+        ? `Confidence is HIGH (${confidenceScore}%) with tight degradation bounds (±${degUncertainty.toFixed(3)}s). Sufficient tyre data collected; execute planned pit window.`
+        : `Degradation uncertainty is sufficiently bounded (±${degUncertainty.toFixed(3)}s) or race horizon is short. Proceed with scheduled pit window.`,
     isSafetyCritical: false
   };
 }

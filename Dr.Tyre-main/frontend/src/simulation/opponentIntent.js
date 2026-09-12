@@ -117,8 +117,13 @@ export function evaluateOpponentIntent(competitorCar, userCar, currentLap, total
   p2 = Math.min(99, Math.max(p1, Math.round(p2)));
   p3 = Math.min(99, Math.max(p2, Math.round(p3)));
 
-  // Confidence score for optimal pit calculation
-  const confidenceScore = compRx.strategyConfidence === 'HIGH' ? 88 : compRx.strategyConfidence === 'MEDIUM' ? 76 : 64;
+  // Confidence score from authoritative prediction confidence engine
+  const confidenceScore = compRx.confidenceScore !== undefined ? compRx.confidenceScore : 75;
+  const confidenceLevel = compRx.confidenceLevel || (confidenceScore >= 80 ? 'HIGH' : confidenceScore >= 60 ? 'MEDIUM' : 'LOW');
+  const confidenceReasons = compRx.confidenceReasons || [];
+  const confidenceReasonText = confidenceReasons.length > 0
+    ? confidenceReasons.join('. ') + '.'
+    : 'Tyre degradation indicates upcoming pit window; track traffic and alternative compound deltas evaluated.';
 
   // ─────────────────────────────────────────────────────────────
   // 3. DYNAMIC "WHY IS THIS OPTIMAL?" EXPLANATION BULLETS
@@ -250,12 +255,18 @@ export function evaluateOpponentIntent(competitorCar, userCar, currentLap, total
       nextBestAction: compRx.recommendedAction || compRx.action,
       optimalPitLap,
       confidenceScore,
+      confidenceLevel,
+      confidenceReasons,
       whyBullets
     },
     intent: {
       p1,
       p2,
       p3,
+      confidenceScore,
+      confidenceLevel,
+      confidenceReason: confidenceReasonText,
+      confidenceReasons,
       intentReasoning
     },
     tacticalResponse: {

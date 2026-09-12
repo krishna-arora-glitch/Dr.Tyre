@@ -29,11 +29,13 @@ import { detectRaceOpportunities } from './opportunityDetector.js';
 import { evaluateBattleManagement } from './battleManagement.js';
 import { computeTyreFingerprint, archiveStintFingerprint } from './tyreFingerprint.js';
 import { evaluateInformationValue } from './informationValue.js';
+import { createConfidenceSmoother } from './predictionConfidence.js';
 
 let modelData = null;
 let telemetryData = null;
 let simInterval = null;
 let lastTick = 0;
+const rxConfidenceSmoother = createConfidenceSmoother(0.20);
 
 function getBaseLapTime() {
   const circuit = CIRCUITS[raceConfig.trackId];
@@ -131,9 +133,13 @@ export function initSimulation(data, telData) {
   DOM.rcDelta = document.getElementById('rc-delta');
   DOM.rcDegRate = document.getElementById('rc-deg-rate');
   DOM.rcHealthGrip = document.getElementById('rc-health-grip');
+  DOM.rcHealthGripConf = document.getElementById('rc-health-grip-conf');
   DOM.rcHealthTread = document.getElementById('rc-health-tread');
+  DOM.rcHealthTreadConf = document.getElementById('rc-health-tread-conf');
   DOM.rcHealthDegRate = document.getElementById('rc-health-deg-rate');
+  DOM.rcHealthDegConf = document.getElementById('rc-health-deg-conf');
   DOM.rcHealthEnergy = document.getElementById('rc-health-energy');
+  DOM.rcHealthEnergyConf = document.getElementById('rc-health-energy-conf');
   DOM.rcPunctureBadge = document.getElementById('rc-puncture-badge');
   DOM.rcPanelGripBar = document.getElementById('rc-panel-grip-bar');
   DOM.rcPanelTreadBar = document.getElementById('rc-panel-tread-bar');
@@ -169,6 +175,7 @@ export function initSimulation(data, telData) {
   
   // Engineer / Prescription Engine
   DOM.engCall = document.getElementById('eng-call');
+  DOM.rxConfBadge = document.getElementById('rx-conf-badge');
   DOM.rxRecommended = document.getElementById('rx-recommended-action');
   DOM.rxReason = document.getElementById('rx-reason');
   DOM.rxGain = document.getElementById('rx-gain');
@@ -1140,25 +1147,38 @@ function updateUI() {
   const setupVal = u.setupOffsetTotal || 0;
   const setupStr = setupVal !== 0 ? ` (Setup: ${setupVal > 0 ? '+' : ''}${setupVal.toFixed(1)}s)` : '';
   
-  if (DOM.rcDelta) DOM.rcDelta.textContent = `+${tyreDeg.toFixed(2)}s ±${tyreDegCI.toFixed(2)}s${setupStr}`;
-  if (DOM.rcDegRate) DOM.rcDegRate.textContent = `${getMarginalDegRate(u.compound, u.tyreAge, u.setup).toFixed(2)}s/L`;
+  const health = u.tyreHealth || computeTyreHealth(u, modelData);
+  const confText = health?.degConfidenceScore ? ` (${health.degConfidenceScore}% ${health.degConfidenceLevel})` : '';
+  if (DOM.rcDelta) DOM.rcDelta.textContent = `+${tyreDeg.toFixed(2)}s ±${tyreDegCI.toFixed(2)}s${setupStr}${confText}`;
+  if (DOM.rcDegRate) DOM.rcDegRate.textContent = `${getMarginalDegRate(u.compound, u.tyreAge, u.setup).toFixed(2)}s/L ±${(health?.degUncertainty || 0.015).toFixed(3)}`;
 
   // ── 5-Indicator Tyre Health Panel & Puncture Risk Engine (MAIN CAR HUD) ──
-  const health = u.tyreHealth || computeTyreHealth(u, modelData);
   if (health) {
     if (DOM.rcHealthGrip) {
       DOM.rcHealthGrip.textContent = `${health.gripLevel}%`;
       DOM.rcHealthGrip.style.color = health.gripLevel > 70 ? 'var(--green)' : (health.gripLevel > 40 ? 'var(--amber)' : 'var(--red)');
     }
+    if (DOM.rcHealthGripConf) {
+      DOM.rcHealthGripConf.textContent = `Conf: ${health.gripConfidenceScore}%`;
+    }
     if (DOM.rcHealthTread) {
       DOM.rcHealthTread.textContent = `${health.treadRemaining}%`;
       DOM.rcHealthTread.style.color = health.treadRemaining > 50 ? 'var(--color-carbon)' : (health.treadRemaining > 20 ? 'var(--amber)' : 'var(--red)');
     }
+    if (DOM.rcHealthTreadConf) {
+      DOM.rcHealthTreadConf.textContent = `Conf: ${health.treadConfidenceScore}%`;
+    }
     if (DOM.rcHealthDegRate) {
       DOM.rcHealthDegRate.textContent = health.degRateFormatted;
     }
+    if (DOM.rcHealthDegConf) {
+      DOM.rcHealthDegConf.textContent = `Conf: ${health.degConfidenceScore}%`;
+    }
     if (DOM.rcHealthEnergy) {
       DOM.rcHealthEnergy.textContent = health.tyreEnergyText;
+    }
+    if (DOM.rcHealthEnergyConf) {
+      DOM.rcHealthEnergyConf.textContent = `Conf: ${health.energyConfidenceScore}%`;
     }
     if (DOM.rcPunctureBadge) {
       DOM.rcPunctureBadge.textContent = `${health.punctureRiskScore}% ${health.punctureRiskLevel}`;
@@ -1337,6 +1357,20 @@ function updateUI() {
 
   // Strategy Prescription Engine
   const rx = getPrescription(u.compound, u.tyreAge, state.lap, u.fuelPct, u.setup, state.cars, u.thermalState, u.pitStops, u.driverBehaviour, recoveryInfo, oppReport);
+
+  // Prediction Confidence smoothing & badge display
+  const rawScore = rx.confidenceScore !== undefined ? rx.confidenceScore : 75;
+  const smoothedConfScore = rxConfidenceSmoother.smooth(rawScore);
+  const smoothedConfLevel = smoothedConfScore >= 80 ? 'HIGH' : (smoothedConfScore >= 60 ? 'MEDIUM' : 'LOW');
+  rx.smoothedConfidenceScore = smoothedConfScore;
+  rx.smoothedConfidenceLevel = smoothedConfLevel;
+
+  if (DOM.rxConfBadge) {
+    DOM.rxConfBadge.textContent = `${smoothedConfScore}% ${smoothedConfLevel}`;
+    DOM.rxConfBadge.className = smoothedConfLevel === 'HIGH' ? 'conf-high' : (smoothedConfLevel === 'MEDIUM' ? 'conf-medium' : 'conf-low');
+    DOM.rxConfBadge.title = (rx.confidenceReasons || []).join('; ');
+  }
+
   if (DOM.engCall) {
     if (rx.action.includes('PIT') && rx.targetCompound) {
       DOM.engCall.textContent = `${rx.action} → ${rx.targetCompound}`;
@@ -1621,7 +1655,7 @@ function updateUI() {
   }
   if (DOM.engOptTyre) DOM.engOptTyre.textContent = rx.nextCompound;
   if (DOM.engOptFuel) DOM.engOptFuel.textContent = `+${(rx.fuelNeeded || 0).toFixed(1)}kg`;
-  if (DOM.engConf) DOM.engConf.textContent = rx.confidence;
+  if (DOM.engConf) DOM.engConf.textContent = `${smoothedConfScore}% ${smoothedConfLevel}`;
   
   // Broadcast state to any listeners (e.g. Research Pages)
   stateListeners.forEach(cb => cb(state));
@@ -1659,12 +1693,17 @@ function populateWhyModal() {
       ? 'RACE FINISH'
       : `LAP ${rx.optimalLap}${rx.targetCompound ? ' (' + rx.targetCompound + ')' : ''}`);
 
+  const confScore = rx.smoothedConfidenceScore || rx.confidenceScore || 75;
+  const confLevel = rx.smoothedConfidenceLevel || rx.confidenceLevel || (confScore >= 80 ? 'HIGH' : confScore >= 60 ? 'MEDIUM' : 'LOW');
+  const confBg = confLevel === 'HIGH' ? '#dcfce7' : confLevel === 'MEDIUM' ? '#fef08a' : '#fee2e2';
+
   const html = `
     <div style="margin-bottom: 16px; padding: 14px; background: #f8fafc; border: 2px solid #000; border-radius: 6px; box-shadow: 0 4px 0 #000;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
         <span style="font-size: 0.72rem; font-weight: 900; letter-spacing: 1px; color: #000;">PRIMARY PRESCRIPTION</span>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <span style="font-size: 0.72rem; font-weight: 800; background: #f1f5f9; border:1px solid #000; color: #000; padding: 2px 6px; border-radius: 4px;">OPTIMAL PIT: ${optPitDisplay}</span>
+          <span style="font-size: 0.72rem; font-weight: 800; background: ${confBg}; border:1px solid #000; color: #000; padding: 2px 6px; border-radius: 4px;">CONFIDENCE: ${confScore}% ${confLevel}</span>
           <span style="font-size: 0.72rem; font-weight: 800; background: #fef08a; border:1px solid #000; color: #000; padding: 2px 6px; border-radius: 4px;">NEXT DECISION: ${rx.nextDecisionLap || 'AS SCHEDULED'}</span>
           <span style="font-size: 0.72rem; font-weight: 800; background: #e2e8f0; border:1px solid #000; color: #000; padding: 2px 6px; border-radius: 4px;">PROJECTED GAIN: ${rx.projectedGain !== null && rx.projectedGain !== undefined && !isNaN(rx.projectedGain) ? '+' + rx.projectedGain.toFixed(1) + 's' : 'N/A'}</span>
         </div>
@@ -1701,6 +1740,7 @@ function populateWhyModal() {
     <div style="background: #ffffff; border: 1px solid #000; border-radius: 6px; padding: 12px; font-size: 0.82rem; line-height: 1.5; color: #000;">
       <div style="font-weight: 800; margin-bottom: 6px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Physics & Telemetry Live State:</div>
       <ul style="margin: 0; padding-left: 18px;">
+        <li><strong>Prediction Confidence:</strong> <strong>${confScore}% (${confLevel})</strong> — ${(rx.confidenceReasons && rx.confidenceReasons.length > 0) ? rx.confidenceReasons.join('; ') : 'Telemetry sample density and degradation slope within bounds'}.</li>
         <li><strong>Tyre Degradation Pace Loss:</strong> Current ${u.compound} tyre is losing <strong>+${getDegradationDelta(u.compound, u.tyreAge, u.setup).toFixed(2)}s/lap</strong>.</li>
         <li><strong>Thermal State:</strong> ${rx.tyreTemperature} (${rx.tyreTempC}°C) — Thermal Penalty: +${(u.thermalState?.thermalPenalty || 0).toFixed(2)}s/lap.</li>
         <li><strong>Pit-Lane Loss:</strong> Estimated stop cost under ${state.raceEvent} is <strong>${rx.pitLoss.toFixed(1)}s</strong>.</li>

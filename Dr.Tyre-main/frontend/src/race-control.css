@@ -527,6 +527,23 @@
   border: 1.5px solid #94a3b8 !important;
 }
 
+/* Prediction Confidence Badges */
+.conf-high {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: 1.5px solid #22c55e !important;
+}
+.conf-medium {
+  background: #fef08a !important;
+  color: #854d0e !important;
+  border: 1.5px solid #eab308 !important;
+}
+.conf-low {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1.5px solid #ef4444 !important;
+}
+
 .competitor-row {
   cursor: pointer !important;
   transition: background 0.15s ease, box-shadow 0.15s ease;

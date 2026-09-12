@@ -8,6 +8,7 @@ import { raceSetup } from '../setup/setup.js';
 import { raceConfig } from './simulation.js';
 import { CIRCUITS } from './circuits.js';
 import { calculateRegulationTransferFactor } from './regulationTransfer.js';
+import { calculatePredictionConfidence } from './predictionConfidence.js';
 
 // ── Strategy Constants ───────────────────────────────────────────
 export const PIT_LANE_LOSS = 24.0; // Seconds lost driving through pit lane at speed limit
@@ -725,10 +726,14 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
         pitLoss: getEffectivePitCost(),
         nextDecisionLap: currentLap + 1,
         confidence: 'HIGH',
+        confidenceScore: 95,
+        confidenceLevel: 'HIGH',
+        confidenceUncertainty: 0.015,
+        confidenceReasons: ['Fuel reserve critical (< 1.0 lap remaining); in-race refuelling prohibited.'],
         state: 'FUEL CRITICAL',
         optimalLap: '-',
         nextCompound: '-',
-        reasoning: 'Insufficient fuel to reach scheduled pit stop.',
+        reasoning: 'The car has insufficient fuel remaining and in-race refuelling is prohibited.',
         candidates: []
       };
     }
@@ -748,6 +753,10 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
       pitLoss: getEffectivePitCost(),
       nextDecisionLap: currentLap + 1,
       confidence: 'HIGH',
+      confidenceScore: 98,
+      confidenceLevel: 'HIGH',
+      confidenceUncertainty: 0.015,
+      confidenceReasons: ['Fuel reserve reaches critical limit (< 1 lap); mandatory box required.'],
       state: 'PIT NOW (FUEL)',
       optimalLap: currentLap,
       nextCompound: (compound === 'HARD') ? 'MEDIUM' : 'HARD',
@@ -761,6 +770,7 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
   // In a 1-stop strategy, if car has already pitted (pitStops >= 1), run to finish unless tyre cliffs/blisters
   if (pitStops >= 1 && isCompoundViableForRemainingLaps(compound, lapsRemaining) && tyreTemperature !== 'BLISTERING') {
     const currentPaceLoss = getDegradationDelta(compound, tyreAge, setup, thermalState);
+    const degUncert = getDegradationUncertainty(compound, tyreAge, setup);
     return {
       action: 'STAY OUT',
       recommendedAction: `Continue on ${compound} to race finish (Stint 2)`,
@@ -778,6 +788,10 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
       optimalLap: 'RACE FINISH',
       nextDecisionLap: 'MONITOR WEAR',
       confidence: 'HIGH',
+      confidenceScore: 92,
+      confidenceLevel: 'HIGH',
+      confidenceUncertainty: degUncert,
+      confidenceReasons: ['Mandatory pit stop fulfilled; tyre life within safe degradation limits to finish.'],
       candidates: [
         {
           id: 'STAY_OUT_FINISH',
@@ -1127,6 +1141,25 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     ? 'pit-now' 
     : (primary.action.includes('PIT') ? 'pit-warning' : 'stay-out');
 
+  // Strategic margin calculation for confidence weighting
+  let strategicMarginSec = 1.5;
+  if (alternative && alternative !== primary) {
+    strategicMarginSec = Math.abs(alternative.totalTime - primary.totalTime);
+  } else if (candidates.length >= 2) {
+    strategicMarginSec = Math.abs(candidates[1].totalTime - candidates[0].totalTime);
+  }
+
+  const predConfidence = calculatePredictionConfidence({
+    compound,
+    tyreAge,
+    setup,
+    thermalState,
+    lapsObserved: tyreAge,
+    trafficRisk: (primary.action === 'PIT NOW') ? trafficNow.risk : trafficNext.risk,
+    driverBehaviour,
+    strategicMarginSec
+  });
+
   return {
     action: primary.action,
     recommendedAction,
@@ -1143,7 +1176,12 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     pitLoss: getEffectivePitCost(),
     optimalLap: displayedOptimalLap,
     nextDecisionLap,
-    confidence: cInfo.trusted ? 'HIGH' : 'MEDIUM',
+    confidence: predConfidence.level,
+    confidenceScore: predConfidence.score,
+    confidenceLevel: predConfidence.level,
+    confidenceUncertainty: predConfidence.uncertainty,
+    confidenceReasons: predConfidence.reasons,
+    confidenceComponents: predConfidence.components,
     candidates,
     alternative: alternativeObj,
     driverBehaviourState: driverBehaviour?.state || 'BALANCED',
@@ -1155,7 +1193,7 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     state: primary.action,
     cssClass,
     nextCompound: primary.targetCompound,
-    strategyConfidence: cInfo.trusted ? 'HIGH' : 'MEDIUM',
+    strategyConfidence: predConfidence.level,
     confNote: (projectedGain !== null && !isNaN(projectedGain)) ? `Projected Gain: +${projectedGain.toFixed(1)}s vs alternative` : 'Opening stint evaluation',
     reasoning: reason,
     counterfactualDelta: (projectedGain !== null && !isNaN(projectedGain)) ? projectedGain : 0.0,
