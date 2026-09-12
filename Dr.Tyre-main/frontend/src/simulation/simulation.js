@@ -1059,19 +1059,22 @@ function updateUI() {
     }
   }
 
-  // Update Alternative Box
+  // Update Alternative Box (Locked space with visibility prevents vertical bouncing)
   if (DOM.rxAltBox) {
     if (rx.alternative) {
-      DOM.rxAltBox.style.display = 'block';
+      DOM.rxAltBox.style.visibility = 'visible';
+      DOM.rxAltBox.style.opacity = '1';
       if (DOM.rxAltAction) DOM.rxAltAction.textContent = `${rx.alternative.action} → ${rx.alternative.targetCompound}`;
       if (DOM.rxAltReason) DOM.rxAltReason.textContent = rx.alternative.reason;
       if (DOM.rxAltGain) {
-        DOM.rxAltGain.textContent = rx.alternative.projectedGain > 0 
-          ? `Proj. Delta: +${rx.alternative.projectedGain.toFixed(1)}s (Traffic: ${rx.alternative.trafficRisk})`
-          : `Proj. Delta: ${rx.alternative.projectedGain.toFixed(1)}s (Traffic: ${rx.alternative.trafficRisk})`;
+        const altGainVal = (rx.alternative.projectedGain !== null && rx.alternative.projectedGain !== undefined && !isNaN(rx.alternative.projectedGain))
+          ? (rx.alternative.projectedGain > 0 ? `+${rx.alternative.projectedGain.toFixed(1)}s` : `${rx.alternative.projectedGain.toFixed(1)}s`)
+          : '+0.0s';
+        DOM.rxAltGain.textContent = `${altGainVal} (${rx.alternative.trafficRisk || 'LOW'})`;
       }
     } else {
-      DOM.rxAltBox.style.display = 'none';
+      DOM.rxAltBox.style.visibility = 'hidden';
+      DOM.rxAltBox.style.opacity = '0';
     }
   }
   

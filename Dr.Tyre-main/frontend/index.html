@@ -541,19 +541,19 @@
           </div>
         </div>
 
-          <!-- Left: Strategy AI & Pit Window -->
-          <div class="rc-merged-left" style="display: flex; gap: var(--space-md); flex: 1;">
-            <div class="rc-panel rc-engineer" style="flex: 1.2; display: flex; flex-direction: column;">
+          <!-- Left: Strategy AI & Pit Window (Locked 435px height eliminates vertical shaking) -->
+          <div class="rc-merged-left" style="display: flex; gap: var(--space-md); flex: 1; align-items: stretch; height: 435px; min-height: 435px; max-height: 435px; box-sizing: border-box;">
+            <div class="rc-panel rc-engineer" style="flex: 1.2; display: flex; flex-direction: column; height: 100%; min-height: 435px; max-height: 435px; box-sizing: border-box; overflow: hidden;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <h3 style="margin:0; font-size:0.85rem; font-weight:900; letter-spacing:1px; color:var(--color-carbon);">PRESCRIPTION ENGINE</h3>
                 <span id="rx-conf-badge" class="conf-high" style="font-size:0.62rem; font-weight:800; padding:2px 6px; border-radius:4px; border:1px solid #000; background:var(--color-paper-white);">HIGH CONF</span>
               </div>
 
-              <!-- Primary Action Badge -->
-              <div class="engineer-call" id="eng-call" style="font-size:1.35rem; font-weight:900; padding:8px 12px; margin-bottom:6px; letter-spacing:0.5px;">STAY OUT</div>
+              <!-- Primary Action Badge (Locked height prevents vertical bounce) -->
+              <div class="engineer-call" id="eng-call" style="font-size:1.18rem; font-weight:900; padding:6px 10px; margin-bottom:6px; letter-spacing:0.5px; height:42px; min-height:42px; max-height:42px; display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-sizing:border-box;">STAY OUT</div>
 
-              <!-- Action Directive Subtitle -->
-              <div id="rx-recommended-action" style="font-size:0.82rem; font-weight:800; color:var(--color-carbon); margin-bottom:6px; line-height:1.25;">Continue on Medium for 2 laps</div>
+              <!-- Action Directive Subtitle (Locked height) -->
+              <div id="rx-recommended-action" style="font-size:0.8rem; font-weight:800; color:var(--color-carbon); margin-bottom:6px; line-height:1.25; height:34px; min-height:34px; max-height:34px; overflow:hidden; display:flex; align-items:center; box-sizing:border-box;">Continue on Medium for 2 laps</div>
 
               <!-- Dynamic Reason (Hidden per user request) -->
               <div id="rx-reason" style="display: none;"></div>
@@ -574,23 +574,23 @@
                 </div>
                 <div style="background:var(--color-paper-white); border:1px solid rgba(0,0,0,0.15); padding:4px 6px; border-radius:4px;">
                   <span style="color:var(--text-muted); font-size:0.65rem; display:block; font-weight:700;">OPTIMAL PIT</span>
-                  <strong id="rx-opt-pit" style="color:var(--color-carbon); font-size:0.88rem; font-weight:800;">LAP 12</strong>
+                  <strong id="rx-opt-pit" style="color:var(--color-carbon); font-size:0.85rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">LAP 12</strong>
                 </div>
               </div>
-              <div style="background:var(--color-paper-white); border:1px solid rgba(0,0,0,0.15); padding:5px 8px; border-radius:4px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="color:var(--text-muted); font-size:0.65rem; font-weight:700; letter-spacing:0.5px;">NEXT DECISION</span>
-                <strong id="rx-next-lap" style="color:var(--color-carbon); font-size:0.75rem; font-weight:800; font-family:var(--font-mono);">RE-EVALUATE LAP 6</strong>
+              <div style="background:var(--color-paper-white); border:1px solid rgba(0,0,0,0.15); padding:5px 8px; border-radius:4px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; height:28px; min-height:28px; max-height:28px; box-sizing:border-box;">
+                <span style="color:var(--text-muted); font-size:0.65rem; font-weight:700; letter-spacing:0.5px; flex-shrink:0;">NEXT DECISION</span>
+                <strong id="rx-next-lap" style="color:var(--color-carbon); font-size:0.75rem; font-weight:800; font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">RE-EVALUATE LAP 6</strong>
               </div>
 
-              <!-- Alternative Strategy Box -->
-              <div id="rx-alt-box" style="padding:6px 8px; border:1.5px dashed var(--color-carbon); border-radius:5px; background:var(--color-paper-white); margin-top:auto;">
+              <!-- Alternative Strategy Box (Fixed 50px height prevents collapsing/jumping) -->
+              <div id="rx-alt-box" style="padding:6px 8px; border:1.5px dashed var(--color-carbon); border-radius:5px; background:var(--color-paper-white); margin-top:auto; height:50px; min-height:50px; max-height:50px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; overflow:hidden;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
                   <span style="font-size:0.62rem; font-weight:800; color:var(--text-muted); letter-spacing:0.5px;">OR ALTERNATIVE:</span>
-                  <strong id="rx-alt-action" style="font-size:0.75rem; color:var(--color-carbon); font-weight:800;">PIT NOW → HARD</strong>
+                  <strong id="rx-alt-action" style="font-size:0.72rem; color:var(--color-carbon); font-weight:800; white-space:nowrap;">PIT NOW → HARD</strong>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.68rem; color:var(--text-secondary);">
-                  <span id="rx-alt-reason" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">Fresh tyres eliminate degradation</span>
-                  <span id="rx-alt-gain" style="font-weight:800; color:var(--color-carbon); flex-shrink:0;">+0.9s</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.68rem; color:var(--text-secondary); gap:4px;">
+                  <span id="rx-alt-reason" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">Fresh tyres eliminate degradation</span>
+                  <span id="rx-alt-gain" style="font-weight:800; color:var(--color-carbon); flex-shrink:0; white-space:nowrap; font-family:var(--font-mono); font-size:0.7rem;">+0.9s (LOW)</span>
                 </div>
               </div>
 
@@ -602,11 +602,11 @@
                 <span id="eng-conf">HIGH</span>
               </div>
 
-              <button id="btn-why" class="btn-outline" style="margin-top: 8px; font-weight:800; font-size:0.72rem; padding:6px 10px;">PRESCRIPTION REASONING & CANDIDATES</button>
+              <button id="btn-why" class="btn-outline" style="margin-top: 8px; font-weight:800; font-size:0.72rem; padding:6px 10px; height:32px; min-height:32px; max-height:32px; box-sizing:border-box;">PRESCRIPTION REASONING & CANDIDATES</button>
             </div>
 
             <!-- NEW: WHY WAS THIS LAP SLOWER -->
-            <div class="rc-panel" style="flex: 1; display: flex; flex-direction: column;">
+            <div class="rc-panel" style="flex: 1; display: flex; flex-direction: column; height: 100%; min-height: 435px; max-height: 435px; box-sizing: border-box; overflow: hidden;">
               <h3 style="color:var(--cyan)">WHY WAS THIS LAP SLOWER?</h3>
               <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; flex: 1;">
                 <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
@@ -634,7 +634,7 @@
               </div>
             </div>
 
-            <div class="rc-panel rc-pit" style="flex: 1; display: flex; flex-direction: column;">
+            <div class="rc-panel rc-pit" style="flex: 1; display: flex; flex-direction: column; height: 100%; min-height: 435px; max-height: 435px; box-sizing: border-box; overflow: hidden;">
               <h3 style="color:var(--cyan)">MANUAL PIT</h3>
               <div class="pit-options">
                 <button class="pit-opt" data-pit="SOFT">S</button>
