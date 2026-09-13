@@ -205,8 +205,8 @@ export function updateResearchWithSimulationState(simState, modelData) {
   }
 
   // Update Sunday Oracle Chart and Metrics
-  if (window.sundayOracleChartInstance && window.sundayOracleChartInstance.data && window.sundayOracleChartInstance.data.datasets) {
-    const chart = window.sundayOracleChartInstance;
+  if (sundayOracleChartInstance && sundayOracleChartInstance.data && sundayOracleChartInstance.data.datasets) {
+    const chart = sundayOracleChartInstance;
     
     // Store full data arrays if not already stored
     if (!chart.fullDataSim) {
@@ -227,10 +227,14 @@ export function updateResearchWithSimulationState(simState, modelData) {
     if (rmseEl) {
       let sumSqErr = 0;
       let validPts = 0;
-      for (let i = 0; i < Math.min(simData.length, actualData.length); i++) {
-        const err = simData[i].y - actualData[i].y;
-        sumSqErr += err * err;
-        validPts++;
+      for (let i = 0; i < simData.length; i++) {
+        const ptSim = simData[i];
+        const ptActual = actualData.find(p => p.x === ptSim.x);
+        if (ptActual) {
+          const err = ptSim.y - ptActual.y;
+          sumSqErr += err * err;
+          validPts++;
+        }
       }
       const dynamicRmse = validPts > 0 ? Math.sqrt(sumSqErr / validPts) : 0.000;
       rmseEl.textContent = dynamicRmse.toFixed(3);
