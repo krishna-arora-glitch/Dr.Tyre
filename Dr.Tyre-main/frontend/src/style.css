@@ -1752,14 +1752,14 @@ body {
 }
 
 .hud-panel:hover .hud-connector {
-  background: var(--cyan);
+  background: #000000;
   box-shadow: none;
 }
 
 .hud-connector {
   position: absolute;
   height: 1px;
-  background: rgba(0, 229, 255, 0.4);
+  background: rgba(0, 0, 0, 0.6);
   pointer-events: none;
   transition: all 0.3s ease;
 }
