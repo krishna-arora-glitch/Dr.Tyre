@@ -171,6 +171,35 @@ export function updateResearchWithSimulationState(simState, modelData) {
       invBanner.classList.add('hidden');
     }
   }
+
+  // Update Validation metrics dynamically
+  const valLaps = document.getElementById('val-laps-validated');
+  if (valLaps && lapSafe > 0) {
+    valLaps.textContent = lapSafe;
+  }
+  
+  const valStints = document.getElementById('val-stints-validated');
+  if (valStints && lapSafe > 0) {
+    const currentStints = Math.max(1, Math.ceil(lapSafe / 18));
+    valStints.textContent = `${currentStints} active stint${currentStints > 1 ? 's' : ''}`;
+  }
+
+  // Update Sunday Oracle Chart to match simulation progress
+  if (sundayOracleChartInstance && sundayOracleChartInstance.data && sundayOracleChartInstance.data.datasets) {
+    const chart = sundayOracleChartInstance;
+    
+    // Store full data arrays if not already stored
+    if (!chart.fullDataSim) {
+      chart.fullDataSim = chart.data.datasets[0].data.slice();
+      chart.fullDataActual = chart.data.datasets[1].data.slice();
+    }
+    
+    // Limit to current lap
+    chart.data.datasets[0].data = chart.fullDataSim.filter(pt => pt.x <= lapSafe);
+    chart.data.datasets[1].data = chart.fullDataActual.filter(pt => pt.x <= lapSafe);
+    
+    chart.update('none'); // Update without animation
+  }
 }
 
 // ── Sub-navigation wiring ──────────────────────────────────────
@@ -537,7 +566,14 @@ export async function initValidation(data) {
       ${metricCard('Baseline MAE', oldModel.mae.toFixed(3), 's', 'Old lap-time traffic', '')}
       ${metricCard('Telemetry MAE', speedModel.mae.toFixed(3), 's', 'Speed-aware traffic', '')}
       ${metricCard('Stress-Aware MAE', stressModel.mae.toFixed(3), 's', 'Traffic + Physics Workload', '')}
-      ${metricCard('Laps Validated', lapsValidated, '', `${stintsValidated} held-out stints`, dataLabel('OBSERVED'))}
+      <div class="metric-card">
+        <div class="metric-card-label">Laps Validated</div>
+        <div style="display:flex;align-items:baseline;gap:6px;">
+          <div class="metric-card-value" id="val-laps-validated">0</div>
+        </div>
+        <div class="metric-card-sublabel" id="val-stints-validated">Waiting for simulation...</div>
+        <div style="margin-top:4px;">${dataLabel('OBSERVED')}</div>
+      </div>
     </div>
 
     ${validationData ? `
