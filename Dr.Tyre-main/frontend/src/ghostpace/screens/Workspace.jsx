@@ -24,11 +24,11 @@ const MODES = [
 export default function Workspace({ project, onClose }) {
   const [activeMode, setActiveMode] = useState('analyze');
   const [analyzeTab, setAnalyzeTab] = useState('intelligence');
-  
+
   // Context state (saves back to project)
   const [driverId, setDriverId] = useState(project.driverId || 'VER');
   const [drivers, setDrivers] = useState([]);
-  
+
   // Update project when context changes
   useEffect(() => {
     if (driverId && driverId !== project.driverId) {
@@ -48,7 +48,7 @@ export default function Workspace({ project, onClose }) {
           setDriverId(dList[0]);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [project.session, driverId]);
 
   const handleDriverSelect = (d) => {
@@ -60,7 +60,7 @@ export default function Workspace({ project, onClose }) {
       {/* Workspace Header Bar */}
       <div className="bg-[var(--bg-elevated)] border-b border-[var(--border-default)] px-6 py-3 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={onClose}
             className="text-[var(--text-muted)] hover:text-white px-2 py-1 rounded hover:bg-[var(--bg-hover)] transition-colors text-sm font-bold"
           >
@@ -72,7 +72,7 @@ export default function Workspace({ project, onClose }) {
             {project.session}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <span className="text-xs text-[var(--text-muted)]">Context:</span>
           <select
@@ -93,8 +93,8 @@ export default function Workspace({ project, onClose }) {
             key={mode.id}
             onClick={() => setActiveMode(mode.id)}
             className={`px-4 py-3 text-sm font-bold border-b-2 whitespace-nowrap transition-colors flex items-center gap-2
-              ${activeMode === mode.id 
-                ? 'border-[var(--accent-blue)] text-[var(--text-primary)]' 
+              ${activeMode === mode.id
+                ? 'border-[var(--accent-blue)] text-[var(--text-primary)]'
                 : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
               }`}
           >
@@ -105,7 +105,7 @@ export default function Workspace({ project, onClose }) {
 
       {/* Mode Content */}
       <div className="flex-1 max-w-[1440px] w-full mx-auto p-6 relative">
-        
+
         {/* ANALYZE MODE */}
         {activeMode === 'analyze' && (
           <div className="space-y-6 animate-in">
@@ -120,11 +120,10 @@ export default function Workspace({ project, onClose }) {
                 <button
                   key={tab.id}
                   onClick={() => setAnalyzeTab(tab.id)}
-                  className={`px-3 py-1 text-xs rounded-md font-bold transition-all ${
-                    analyzeTab === tab.id 
-                      ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)]' 
+                  className={`px-3 py-1 text-xs rounded-md font-bold transition-all ${analyzeTab === tab.id
+                      ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)]'
                       : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -140,16 +139,16 @@ export default function Workspace({ project, onClose }) {
 
         {/* COMPARE MODE */}
         {activeMode === 'compare' && (
-          <CompareMode 
-            sessionId={project.session} 
-            baseDriverId={driverId} 
+          <CompareMode
+            sessionId={project.session}
+            baseDriverId={driverId}
             drivers={drivers}
           />
         )}
 
         {/* INVESTIGATE MODE */}
         {activeMode === 'investigate' && (
-          <InvestigateMode 
+          <InvestigateMode
             sessionId={project.session}
             driverId={driverId}
           />
@@ -164,7 +163,7 @@ export default function Workspace({ project, onClose }) {
 
         {/* REPORT MODE */}
         {activeMode === 'report' && (
-          <ReportView 
+          <ReportView
             project={project}
             driverId={driverId}
           />

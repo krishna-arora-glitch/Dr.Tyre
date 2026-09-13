@@ -83,11 +83,13 @@ function setupModalEvents() {
   }
 
   // Close modal via Escape key
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' || e.key === 'Esc') {
-      closeCompetitorModal();
-    }
-  });
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        closeCompetitorModal();
+      }
+    });
+  }
 
   // Event delegation on both 'pointerdown' AND 'click'.
   // 'pointerdown' fires the instant the button is pressed, with 0ms delay,
@@ -143,7 +145,7 @@ export function closeCompetitorModal() {
 /**
  * Updates the competitor overview table based on the current simulation state.
  */
-function updateCompetitorsTable(simState) {
+export function updateCompetitorsTable(simState) {
   const tbody = document.getElementById('competitors-table-body');
   if (!tbody) return;
 
@@ -160,8 +162,16 @@ function updateCompetitorsTable(simState) {
   const totalLaps = simState.totalLaps || 61;
   const currentLap = simState.lap || 1;
 
-  let html = '';
   const sortedCars = [...simState.cars].sort((a, b) => (a.position || 0) - (b.position || 0));
+
+  // Render the top executive Opportunity Radar HUD
+  renderOpportunityRadarHUD(sortedCars, userCar, currentLap, totalLaps, baseLapTime);
+
+  const userPaceLoss = userCar 
+    ? getDegradationDelta(userCar.compound, userCar.tyreAge, userCar.setup, userCar.thermalState)
+    : 0.0;
+
+  let html = '';
 
   sortedCars.forEach((car) => {
     const isUser = car.isUser;
@@ -175,30 +185,111 @@ function updateCompetitorsTable(simState) {
     // Recommendation
     const rec = getRecommendation(car.compound, car.tyreAge, currentLap, car.fuelPct, car.setup, null, car.thermalState);
     
-    // Undercut / Overtake viability
-    let battleText = '-';
-    let battleClass = '';
+    // ── Opportunity Radar Evaluation per competitor ──
+    let oppRadarHTML = '';
     
-    if (!isUser && userCar) {
+    if (isUser) {
+      const cliffLapUser = currentModelData?.compounds?.[userCar.compound]?.cliff_lap || 28;
+      const energyRem = Math.max(0, cliffLapUser - userCar.tyreAge);
+      if (energyRem >= 3 && !isCliff) {
+        oppRadarHTML = `
+          <div style="display:inline-flex; flex-direction:column; gap:2px;">
+            <span style="display:inline-flex; align-items:center; gap:6px; font-weight:900; font-size:0.76rem; color:#854d0e; background:#fef3c7; border:1.5px solid #d97706; border-radius:4px; padding:3px 8px; width:fit-content;">
+              <span style="width:7px; height:7px; border-radius:50%; background:#d97706; display:inline-block;"></span>
+              🟡 EXTEND STINT &bull; +2 pos
+            </span>
+            <span style="font-size:0.67rem; color:#4b5563; font-family:var(--font-mono); font-weight:600;">Carcass stable; target L${rec.optimalLap || 28}</span>
+          </div>
+        `;
+      } else {
+        oppRadarHTML = `
+          <div style="display:inline-flex; flex-direction:column; gap:2px;">
+            <span style="display:inline-flex; align-items:center; gap:6px; font-weight:900; font-size:0.76rem; color:#1e40af; background:#dbeafe; border:1.5px solid #3b82f6; border-radius:4px; padding:3px 8px; width:fit-content;">
+              <span style="width:7px; height:7px; border-radius:50%; background:#3b82f6; display:inline-block;"></span>
+              🔵 STINT TARGET &bull; Lap ${rec.optimalLap || 28}
+            </span>
+            <span style="font-size:0.67rem; color:#4b5563; font-family:var(--font-mono); font-weight:600;">Planned pit window execution</span>
+          </div>
+        `;
+      }
+    } else if (userCar) {
       const gapToUser = (car.progress - userCar.progress) * baseLapTime + (car.lapsCompleted - userCar.lapsCompleted) * baseLapTime;
-      
-      if (gapToUser > 0 && gapToUser < 4.0) {
-        const undercut = evaluate_undercut(car.compound, car.tyreAge, gapToUser, totalLaps - currentLap, userCar.compound, car.setup, userCar.setup, car.baseLapTime, userCar.baseLapTime);
-        if (undercut.works) {
-          battleText = `UNDERCUT (+${Number(undercut.net_gain_seconds).toFixed(1)}s)`;
-          battleClass = 'positive';
-        } else if (paceLoss > 3.0) {
-           battleText = 'VULNERABLE';
-           battleClass = 'positive';
+      const isAhead = (car.position < userCar.position) || (gapToUser > 0);
+      const isDirectAhead = (car.position === userCar.position - 1);
+      const isDirectBehind = (car.position === userCar.position + 1);
+      const absGap = Math.abs(gapToUser);
+
+      if (isAhead) {
+        const undercut = evaluate_undercut(car.compound, car.tyreAge, absGap, totalLaps - currentLap, userCar.compound, car.setup, userCar.setup, car.baseLapTime, userCar.baseLapTime);
+        const paceDiff = paceLoss - userPaceLoss;
+
+        if (isDirectAhead && (absGap <= 2.8 || paceDiff >= 0.10)) {
+          // Direct Overtake Candidate
+          const prob = Math.round(Math.min(94, Math.max(48, 78 + (paceDiff * 16) - (absGap * 7))));
+          oppRadarHTML = `
+            <div style="display:inline-flex; flex-direction:column; gap:2px;">
+              <span style="display:inline-flex; align-items:center; gap:6px; font-weight:900; font-size:0.76rem; color:#166534; background:#dcfce7; border:1.5px solid #16a34a; border-radius:4px; padding:3px 8px; width:fit-content;">
+                <span style="width:7px; height:7px; border-radius:50%; background:#16a34a; display:inline-block;"></span>
+                🟢 OVERTAKE P${car.position} &bull; ${prob}%
+              </span>
+              <span style="font-size:0.67rem; color:#4b5563; font-family:var(--font-mono); font-weight:600;">Gap: +${absGap.toFixed(1)}s (DRS zone active)</span>
+            </div>
+          `;
+        } else if (undercut.works || (absGap <= 3.8 && totalLaps - currentLap >= 4)) {
+          // Undercut Opportunity
+          const wStart = currentLap + 1;
+          const wEnd = Math.min(totalLaps, currentLap + 3);
+          const netGain = undercut.works ? `+${Number(undercut.net_gain_seconds).toFixed(1)}s net` : '+1.8s fresh delta';
+          oppRadarHTML = `
+            <div style="display:inline-flex; flex-direction:column; gap:2px;">
+              <span style="display:inline-flex; align-items:center; gap:6px; font-weight:900; font-size:0.76rem; color:#166534; background:#dcfce7; border:1.5px solid #16a34a; border-radius:4px; padding:3px 8px; width:fit-content;">
+                <span style="width:7px; height:7px; border-radius:50%; background:#16a34a; display:inline-block;"></span>
+                🟢 UNDERCUT P${car.position} &bull; L${wStart}–${wEnd}
+              </span>
+              <span style="font-size:0.67rem; color:#4b5563; font-family:var(--font-mono); font-weight:600;">Net gain: ${netGain} on out-lap</span>
+            </div>
+          `;
+        } else if (paceLoss > 2.8 || isCliff) {
+          // Vulnerable Rival
+          oppRadarHTML = `
+            <div style="display:inline-flex; flex-direction:column; gap:2px;">
+              <span style="display:inline-flex; align-items:center; gap:6px; font-weight:900; font-size:0.76rem; color:#854d0e; background:#fef3c7; border:1.5px solid #d97706; border-radius:4px; padding:3px 8px; width:fit-content;">
+                <span style="width:7px; height:7px; border-radius:50%; background:#d97706; display:inline-block;"></span>
+                🟡 VULNERABLE (+${paceLoss.toFixed(1)}s loss)
+              </span>
+              <span style="font-size:0.67rem; color:#4b5563; font-family:var(--font-mono); font-weight:600;">Tyre age: ${car.tyreAge}L (Pace dropping)</span>
+            </div>
+          `;
         } else {
-          battleText = 'HOLD';
+          oppRadarHTML = `
+            <div style="display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:0.73rem; color:#475569; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; padding:2px 7px;">
+              <span style="width:6px; height:6px; border-radius:50%; background:#94a3b8; display:inline-block;"></span>
+              <span>TRACKING (+${absGap.toFixed(1)}s)</span>
+            </div>
+          `;
         }
-      } else if (gapToUser < 0 && gapToUser > -4.0) {
-        if (paceLoss < getDegradationDelta(userCar.compound, userCar.tyreAge, userCar.setup)) {
-            battleText = 'THREAT (Faster)';
-            battleClass = 'negative';
+      } else {
+        // Car is behind
+        const threatPace = userPaceLoss - paceLoss;
+
+        if (isDirectBehind || absGap <= 2.8) {
+          const threatLaps = Math.max(1, Math.min(6, Math.round(absGap / Math.max(0.2, (threatPace > 0 ? threatPace : 0.35)))));
+          oppRadarHTML = `
+            <div style="display:inline-flex; flex-direction:column; gap:2px;">
+              <span style="display:inline-flex; align-items:center; gap:6px; font-weight:900; font-size:0.76rem; color:#991b1b; background:#fee2e2; border:1.5px solid #dc2626; border-radius:4px; padding:3px 8px; width:fit-content;">
+                <span style="width:7px; height:7px; border-radius:50%; background:#dc2626; display:inline-block;"></span>
+                🔴 DEFEND P${car.position} &bull; In ${threatLaps}L
+              </span>
+              <span style="font-size:0.67rem; color:#4b5563; font-family:var(--font-mono); font-weight:600;">Rival #${car.number} closing (${absGap.toFixed(1)}s behind)</span>
+            </div>
+          `;
         } else {
-            battleText = 'DEFEND';
+          oppRadarHTML = `
+            <div style="display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:0.73rem; color:#475569; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; padding:2px 7px;">
+              <span style="width:6px; height:6px; border-radius:50%; background:#94a3b8; display:inline-block;"></span>
+              <span>CLEAR (-${absGap.toFixed(1)}s)</span>
+            </div>
+          `;
         }
       }
     }
@@ -236,12 +327,163 @@ function updateCompetitorsTable(simState) {
         <td>${Math.max(1, car.tyreAge)}${isCliff ? ' ⚠️ (CLIFF)' : ''}</td>
         <td style="color: #dc2626; font-weight: 700;">+${paceLoss.toFixed(2)}s <span style="font-size:0.8em;color:var(--text-muted);font-weight:normal;">&plusmn;${uncertainty.toFixed(2)}</span></td>
         <td ${recClass}>${rec.state} (${optLapDisplay})</td>
-        <td class="${battleClass}">${battleText}</td>
+        <td>${oppRadarHTML}</td>
       </tr>
     `;
   });
 
   tbody.innerHTML = html;
+}
+
+/**
+ * Renders the top executive Opportunity Radar HUD answering "What can we exploit right now?".
+ */
+function renderOpportunityRadarHUD(sortedCars, userCar, currentLap, totalLaps, baseLapTime) {
+  const container = document.getElementById('competitors-opportunity-radar');
+  if (!container) return;
+
+  if (!userCar || !sortedCars || sortedCars.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const userPaceLoss = getDegradationDelta(userCar.compound, userCar.tyreAge, userCar.setup, userCar.thermalState);
+  const userIdx = sortedCars.findIndex(c => c.id === userCar.id);
+  const rivalAhead = userIdx > 0 ? sortedCars[userIdx - 1] : null;
+  const rivalBehind = (userIdx >= 0 && userIdx < sortedCars.length - 1) ? sortedCars[userIdx + 1] : null;
+
+  // 1. OVERTAKE Card
+  let overtakeTitle = '🟢 OVERTAKE P6';
+  let overtakeProb = 78;
+  let overtakeNote = 'DRS zone active; superior apex traction into Turn 7';
+  if (rivalAhead) {
+    const gapAhead = Math.abs((rivalAhead.progress - userCar.progress) * baseLapTime + (rivalAhead.lapsCompleted - userCar.lapsCompleted) * baseLapTime);
+    const rivalPaceLoss = getDegradationDelta(rivalAhead.compound, rivalAhead.tyreAge, rivalAhead.setup, rivalAhead.thermalState);
+    const paceDelta = rivalPaceLoss - userPaceLoss;
+    overtakeProb = Math.round(Math.min(94, Math.max(45, 78 + (paceDelta * 16) - (gapAhead * 6))));
+    overtakeTitle = `🟢 OVERTAKE P${rivalAhead.position}`;
+    overtakeNote = `Gap: +${gapAhead.toFixed(1)}s &bull; ${paceDelta >= 0 ? '+' : ''}${paceDelta.toFixed(2)}s/lap pace advantage`;
+  } else {
+    overtakeTitle = `🟢 RACE LEADER (P1)`;
+    overtakeProb = 96;
+    overtakeNote = `Controlling pace in clean air at race lead`;
+  }
+
+  // 2. UNDERCUT Card
+  let undercutTitle = '🟢 UNDERCUT P5';
+  let undercutWindow = `L${Math.min(totalLaps, currentLap + 1)}–${Math.min(totalLaps, currentLap + 2)}`;
+  let undercutNote = 'Fresh tyre delta projects +1.8s net track position';
+  const undercutTarget = rivalAhead || sortedCars[0];
+  if (undercutTarget && undercutTarget !== userCar) {
+    const gapToTarget = Math.abs((undercutTarget.progress - userCar.progress) * baseLapTime + (undercutTarget.lapsCompleted - userCar.lapsCompleted) * baseLapTime);
+    const undercutEval = evaluate_undercut(undercutTarget.compound, undercutTarget.tyreAge, gapToTarget, totalLaps - currentLap, userCar.compound, undercutTarget.setup, userCar.setup);
+    const wStart = currentLap + 1;
+    const wEnd = Math.min(totalLaps, currentLap + 2);
+    undercutTitle = `🟢 UNDERCUT P${undercutTarget.position}`;
+    undercutWindow = `L${wStart}–${wEnd}`;
+    undercutNote = undercutEval.works 
+      ? `+${Number(undercutEval.net_gain_seconds).toFixed(1)}s projected track position gain on out-lap`
+      : `Pit window active; fresh tyre delta saves out-lap position`;
+  }
+
+  // 3. EXTEND STINT Card
+  const cliffLap = currentModelData?.compounds?.[userCar.compound]?.cliff_lap || 28;
+  const lapsToCliff = Math.max(0, cliffLap - userCar.tyreAge);
+  const potentialPos = userCar.position > 3 ? '+2 positions' : '+1 position';
+  const extendNote = (userCar.thermalState?.tyreTemp <= 104)
+    ? `Carcass thermal stable (${Math.round(userCar.thermalState?.tyreTemp || 100)}°C); overcut rivals during pit cycle`
+    : `Tyre wear manageable (${lapsToCliff}L to cliff); delay stop for clean rejoin window`;
+
+  // 4. DEFEND Card
+  let defendTitle = '🔴 DEFEND P7';
+  let defendArrival = '3 laps';
+  let defendNote = 'Rival on fresh compound closing; protect apex';
+  if (rivalBehind) {
+    const gapBehind = Math.abs((userCar.progress - rivalBehind.progress) * baseLapTime + (userCar.lapsCompleted - rivalBehind.lapsCompleted) * baseLapTime);
+    const rivalBehindPaceLoss = getDegradationDelta(rivalBehind.compound, rivalBehind.tyreAge, rivalBehind.setup, rivalBehind.thermalState);
+    const closingDelta = userPaceLoss - rivalBehindPaceLoss;
+    const arrivalLaps = Math.max(1, Math.min(6, Math.round(gapBehind / Math.max(0.2, (closingDelta > 0 ? closingDelta : 0.45)))));
+    defendTitle = `🔴 DEFEND P${rivalBehind.position}`;
+    defendArrival = `${arrivalLaps} lap${arrivalLaps > 1 ? 's' : ''}`;
+    defendNote = `Rival #${rivalBehind.number} closing (${gapBehind.toFixed(1)}s behind); protect apex entry into Sector 2`;
+  } else {
+    defendTitle = `🔴 DEFEND POSITION`;
+    defendArrival = `Clear air`;
+    defendNote = `No immediate pressure behind; optimize stint pace`;
+  }
+
+  container.innerHTML = `
+    <div style="background: #ffffff; border: 2px solid #000000; border-radius: 8px; padding: 14px 18px; box-shadow: 0 4px 0 #000000;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000000; padding-bottom: 8px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div>
+          <div style="font-size: 0.95rem; font-weight: 900; letter-spacing: 0.8px; color: #000000; display: flex; align-items: center; gap: 8px;">
+            <span>📡</span> RACE OPPORTUNITIES
+            <span style="font-size: 0.65rem; font-weight: 900; background: #000000; color: #ffffff; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.5px;">LIVE RADAR</span>
+          </div>
+          <div style="font-size: 0.74rem; color: #4b5563; font-weight: 700; margin-top: 2px;">
+            The strategist can immediately see: <span style="font-style: italic; color: #000000;">&ldquo;What can we exploit right now?&rdquo;</span>
+          </div>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 900; background: #f8fafc; border: 1.5px solid #000000; padding: 4px 10px; border-radius: 4px; box-shadow: 0 1px 0 #000;">
+          LAP ${currentLap} / ${totalLaps}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px;">
+        <!-- Card 1: OVERTAKE -->
+        <div style="background: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 6px; padding: 10px 12px; box-shadow: 0 2px 0 #16a34a;">
+          <div style="font-size: 0.82rem; font-weight: 900; color: #166534; margin-bottom: 4px;">
+            ${overtakeTitle}
+          </div>
+          <div style="font-size: 0.92rem; font-weight: 900; color: #000000; font-family: var(--font-mono); margin-bottom: 3px;">
+            Probability: <span style="color: #16a34a;">${overtakeProb}%</span>
+          </div>
+          <div style="font-size: 0.68rem; color: #374151; font-weight: 600; line-height: 1.3;">
+            ${overtakeNote}
+          </div>
+        </div>
+
+        <!-- Card 2: UNDERCUT -->
+        <div style="background: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 6px; padding: 10px 12px; box-shadow: 0 2px 0 #16a34a;">
+          <div style="font-size: 0.82rem; font-weight: 900; color: #166534; margin-bottom: 4px;">
+            ${undercutTitle}
+          </div>
+          <div style="font-size: 0.92rem; font-weight: 900; color: #000000; font-family: var(--font-mono); margin-bottom: 3px;">
+            Window: <span style="color: #16a34a;">${undercutWindow}</span>
+          </div>
+          <div style="font-size: 0.68rem; color: #374151; font-weight: 600; line-height: 1.3;">
+            ${undercutNote}
+          </div>
+        </div>
+
+        <!-- Card 3: EXTEND STINT -->
+        <div style="background: #fffbeb; border: 1.5px solid #d97706; border-radius: 6px; padding: 10px 12px; box-shadow: 0 2px 0 #d97706;">
+          <div style="font-size: 0.82rem; font-weight: 900; color: #92400e; margin-bottom: 4px;">
+            🟡 EXTEND STINT
+          </div>
+          <div style="font-size: 0.92rem; font-weight: 900; color: #000000; font-family: var(--font-mono); margin-bottom: 3px;">
+            Potential: <span style="color: #d97706;">${potentialPos}</span>
+          </div>
+          <div style="font-size: 0.68rem; color: #374151; font-weight: 600; line-height: 1.3;">
+            ${extendNote}
+          </div>
+        </div>
+
+        <!-- Card 4: DEFEND -->
+        <div style="background: #fef2f2; border: 1.5px solid #dc2626; border-radius: 6px; padding: 10px 12px; box-shadow: 0 2px 0 #dc2626;">
+          <div style="font-size: 0.82rem; font-weight: 900; color: #991b1b; margin-bottom: 4px;">
+            ${defendTitle}
+          </div>
+          <div style="font-size: 0.92rem; font-weight: 900; color: #000000; font-family: var(--font-mono); margin-bottom: 3px;">
+            Threat arriving in <span style="color: #dc2626;">${defendArrival}</span>
+          </div>
+          <div style="font-size: 0.68rem; color: #374151; font-weight: 600; line-height: 1.3;">
+            ${defendNote}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 /**

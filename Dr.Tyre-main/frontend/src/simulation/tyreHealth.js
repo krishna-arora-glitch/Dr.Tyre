@@ -96,10 +96,10 @@ export function computeTyreHealth(car, modelData = null) {
   // PunctureRisk = 1.0 - S(t | X)
   
   // 1. Weibull Baseline Cumulative Hazard: H_0(t) = (tyreAge / lambda_0)^k
-  // k = 2.5 (wear-out shape parameter matching logistics survival pipeline)
-  // lambda_0 = 1.25 * cliffLap (scale parameter where un-stressed tyre approaches failure)
-  const weibullShape = 2.5;
-  const baseLambda = 1.25 * Math.max(1, cliffLap);
+  // k = 2.0 (softer wear-out shape to prevent sudden risk spikes)
+  // lambda_0 = 1.6 * cliffLap (scale parameter pushed further out to reduce explosion risk)
+  const weibullShape = 2.0;
+  const baseLambda = 1.6 * Math.max(1, cliffLap);
   const baselineAgeRatio = tyreAge / baseLambda;
   const H0 = Math.pow(baselineAgeRatio, weibullShape);
 

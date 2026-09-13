@@ -62,8 +62,18 @@ export function generateGrid(userStartingPos, basePace = 94.0) {
         compoundBasePace = modelData.compounds[compound].base_pace;
     }
 
-    const performanceOffset = (i) * 0.15; // 0.15s slower per grid slot
-    let aiBaseLapTime = compoundBasePace + performanceOffset;
+    let aiBaseLapTime;
+
+    if (isUser) {
+      // ── USER CAR: Clean base pace with no grid penalty or random noise ──
+      // The user's actual setup offsets are applied later in simulation.js initSimulation
+      // This ensures the user is NEVER slower than any AI car on raw pace
+      aiBaseLapTime = compoundBasePace;
+    } else {
+      // ── AI CARS: Grid position spread + reduced setup randomization ──
+      const performanceOffset = (i) * 0.06; // 0.06s slower per grid slot
+      aiBaseLapTime = compoundBasePace + performanceOffset;
+    }
 
     // Randomize Setup
     const downforceLevels = ['LOW', 'MEDIUM', 'HIGH'];
@@ -75,17 +85,20 @@ export function generateGrid(userStartingPos, basePace = 94.0) {
       energy: { deploymentStrategy: energies[Math.floor(Math.random() * energies.length)] }
     };
 
+    // AI setup offsets — capped to prevent the setup lottery from creating unrealistically fast cars
     let setupOffset = 0;
-    if (setup.downforceLevel === 'HIGH') setupOffset -= 1.2;
-    if (setup.downforceLevel === 'LOW') setupOffset += 0.8;
-    if (setup.balance === 'FRONT' || setup.balance === 'REAR') setupOffset += 0.2;
+    if (setup.downforceLevel === 'HIGH') setupOffset -= 0.4;   // was -1.2
+    if (setup.downforceLevel === 'LOW') setupOffset += 0.3;    // was +0.8
+    if (setup.balance === 'FRONT' || setup.balance === 'REAR') setupOffset += 0.1;
     
     let energyOffset = 0;
-    if (setup.energy.deploymentStrategy === 'AGGRESSIVE') energyOffset -= 0.8;
-    if (setup.energy.deploymentStrategy === 'CONSERVATIVE') energyOffset += 0.8;
+    if (setup.energy.deploymentStrategy === 'AGGRESSIVE') energyOffset -= 0.3;   // was -0.8
+    if (setup.energy.deploymentStrategy === 'CONSERVATIVE') energyOffset += 0.3;  // was +0.8
 
-    // Small random noise to base lap time
-    aiBaseLapTime += (Math.random() * 0.4 - 0.2) + setupOffset + energyOffset;
+    if (!isUser) {
+      // Only AI cars get random setup noise; user pace is deterministic
+      aiBaseLapTime += (Math.random() * 0.3 - 0.15) + setupOffset + energyOffset;
+    }
     
     grid.push({
       id: isUser ? 'USER' : `AI_${dNum}`,
@@ -145,19 +158,13 @@ export function generateGrid(userStartingPos, basePace = 94.0) {
 export function evaluateAIPit(car, totalLaps) {
   if (car.isUser) return false;
   if (car.isPitting) return false;
-  if (car.pitStops >= 2) return false; // Max 2 stops
-  if (totalLaps - car.currentLap < 5) return false; // Don't pit at the very end
   
-  const rec = getRecommendation(car.compound, car.tyreAge, car.currentLap, car.fuelPct, car.setup, null, car.thermalState);
+  // USER CONSTRAINT: Make AI cars pit exactly ONCE, and strictly AFTER lap 30
+  if (car.pitStops >= 1) return false;
+  if (car.currentLap <= 30) return false;
   
-  if (rec.state === 'PIT NOW' || rec.state === 'PIT NOW (FUEL CRITICAL)') {
-    return true;
-  }
-  
-  if (rec.state === 'PIT WINDOW') {
-    // 30% chance per lap to pit inside window to spread the field
-    if (Math.random() < 0.3) return true;
-  }
+  // Spread out their stops slightly after lap 30 so they don't all box simultaneously
+  if (Math.random() < 0.25) return true;
   
   return false;
 }

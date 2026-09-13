@@ -6,6 +6,11 @@
  */
 
 import './style.css';
+
+window.addEventListener('error', function(event) {
+  document.body.innerHTML = '<div style="padding:50px;color:red;font-size:24px;background:white;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;">JS ERROR: ' + event.message + '<br>' + event.filename + ':' + event.lineno + '<br><pre>' + (event.error ? event.error.stack : '') + '</pre></div>';
+});
+
 import { initSimulation, destroySimulation, onSimulationUpdate, setRaceConfig, raceConfig } from './simulation/simulation.js';
 import { CIRCUITS } from './simulation/circuits.js';
 import { initAnalysis } from './analysis/analysis.js';
@@ -14,7 +19,8 @@ import {
   initCompare, initInvestigate, initValidation,
   initProvenance, initReport, updateResearchWithSimulationState
 } from './research/research.js';
-import { initStoryMode } from './research/story.js';
+import { initRaceIntelligencePage, updateRaceIntelligenceUI } from './simulation/raceIntelligencePage.js';
+import { getInitialRaceIntelligence } from './simulation/raceIntelligenceFeed.js';
 import { initSetup } from './setup/setup.js';
 import { initCompetitorsPage } from './competitors/competitorsPage.js';
 import { initLapChart, updateLapChart } from './simulation/lap-chart.js';
@@ -228,10 +234,14 @@ function initTabs() {
       } else if (targetTab === 'validation' && modelData) {
         initValidation(modelData);
         populateModelInfo(modelData);
-      } else if (targetTab === 'story' && modelData) {
-        if (!storyInitialized) {
-          initStoryMode(modelData);
-          storyInitialized = true;
+      } else if (targetTab === 'story') {
+        initRaceIntelligencePage();
+        const simState = getSimulationState();
+        if (simState && simState.raceIntelligence) {
+          updateRaceIntelligenceUI(simState.raceIntelligence, simState.lap || 1, simState.totalLaps || 61);
+        } else {
+          const initialIntel = getInitialRaceIntelligence(modelData, selectedTrackId || 'singapore');
+          updateRaceIntelligenceUI(initialIntel, 1, CIRCUITS[selectedTrackId || 'singapore']?.raceLaps || 61);
         }
       } else if (targetTab === 'data' && modelData) {
         initProvenance(modelData);
@@ -263,6 +273,7 @@ function initResearchPages(data) {
   initTyreIntelligence(data);
   initCompare(data);
   initInvestigate(data);
+  initValidation(data);
 }
 
 function initRcChartsNav() {
@@ -503,6 +514,10 @@ function initTrackSelection() {
     const badge = document.getElementById('race-badge');
     if (badge) badge.textContent = `2024 ${c.name.toUpperCase()} GP`;
 
+    // Populate initial race intelligence for selected track
+    const initialIntel = getInitialRaceIntelligence(modelData, selectedTrackId);
+    updateRaceIntelligenceUI(initialIntel, 1, c.raceLaps);
+
     // Switch to setup tab
     document.getElementById('tab-car-setup').click();
   });
@@ -535,10 +550,14 @@ function selectTrack(id) {
 // ── Bootstrap ──────────────────────────────────────────────────
 async function bootstrap() {
   initTabs();
+  initRaceIntelligencePage();
   initTrackSelection();
 
   // Pre-select default track (singapore) and preload modelData immediately
   selectTrack('singapore');
+  const preloadedIntel = getInitialRaceIntelligence(null, 'singapore');
+  updateRaceIntelligenceUI(preloadedIntel, 1, CIRCUITS['singapore']?.raceLaps || 61);
+
   loadModelData('singapore').then(data => {
     modelData = data;
     if (modelData) {
@@ -547,6 +566,8 @@ async function bootstrap() {
       initResearchPages(modelData);
       initLapChart();
       initExtraCharts();
+      const initialIntel = getInitialRaceIntelligence(modelData, 'singapore');
+      updateRaceIntelligenceUI(initialIntel, 1, CIRCUITS['singapore']?.raceLaps || 61);
     }
   });
 

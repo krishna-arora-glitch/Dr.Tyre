@@ -27,6 +27,7 @@ export function initStoryMode(data) {
 
   const prevBtn = document.getElementById('story-prev');
   const nextBtn = document.getElementById('story-next');
+  if (!prevBtn || !nextBtn) return;
 
   if (prevBtn) {
     prevBtn.onclick = () => {

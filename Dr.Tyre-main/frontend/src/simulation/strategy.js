@@ -11,7 +11,7 @@ import { calculateRegulationTransferFactor } from './regulationTransfer.js';
 import { calculatePredictionConfidence } from './predictionConfidence.js';
 
 // ── Strategy Constants ───────────────────────────────────────────
-export const PIT_LANE_LOSS = 24.0; // Seconds lost driving through pit lane at speed limit
+export const PIT_LANE_LOSS = 22.0; // Seconds lost driving through pit lane at speed limit
 export const OUT_LAP_COLD_TYRE_PENALTY = 2.0; // Seconds lost on out-lap due to cold tyres
 export const SC_PIT_COST_MULTIPLIER = 0.55; // Pitting under SC loses ~45% less relative time to field
 export const VSC_PIT_COST_MULTIPLIER = 0.65; // Pitting under VSC is slightly worse than SC but better than green
@@ -67,11 +67,10 @@ export function getFuelBurnRate(setup = null) {
 }
 
 export function calculateOptimalRefuelAmount(lapsRemaining) {
-  if (raceSetup && !raceSetup.ruleset.refuellingDuringRace) {
-    return 0; // No refueling allowed
-  }
-  // Add a tiny 2% safety buffer
-  return lapsRemaining * getFuelBurnRate() * 1.02;
+  // Refueling was banned in F1 in 2010. Cars must complete the race on their starting fuel.
+  // Returning 0 ensures cars don't suddenly gain 100kg of weight after a pit stop,
+  // which was incorrectly negating the fresh tyre pace advantage.
+  return 0;
 }
 
 export function getEffectivePitCost(refuelAmountKg = 0) {
@@ -235,7 +234,8 @@ export function getDegradationDelta(compound, tyreAge, setup = null, thermalStat
 
   // Final Degradation Formula:
   // Δt_deg = (BaseAgeDegradation × (1 + StressFactor) × R_2026) + ThermalPenalty
-  let delta = regulated + thermalPenalty;
+  // Scaled down by 35% to prevent overly aggressive pace drop-offs
+  let delta = (regulated + thermalPenalty) * 0.65;
   
   let trackMultiplier = 1.0;
   if (raceConfig && raceConfig.trackId) {
@@ -345,7 +345,7 @@ const HYSTERESIS_THRESHOLD_SEC = 1.5;
 
 export const GP_CLIFF_THRESHOLDS = {
   SOFT: 18,
-  MEDIUM: 30,
+  MEDIUM: 24,
   HARD: 48
 };
 
@@ -767,8 +767,8 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
   }
 
   // 2. Mandatory Pit Stop Completed Check
-  // In a 1-stop strategy, if car has already pitted (pitStops >= 1), run to finish unless tyre cliffs/blisters
-  if (pitStops >= 1 && isCompoundViableForRemainingLaps(compound, lapsRemaining) && tyreTemperature !== 'BLISTERING') {
+  // In a 2-stop strategy, allow second pit evaluation; only lock STAY OUT after 2 stops
+  if (pitStops >= 2 && isCompoundViableForRemainingLaps(compound, lapsRemaining) && tyreTemperature !== 'BLISTERING') {
     const currentPaceLoss = getDegradationDelta(compound, tyreAge, setup, thermalState);
     const degUncert = getDegradationUncertainty(compound, tyreAge, setup);
     return {
@@ -897,13 +897,13 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
       }
     }
 
-    // Candidate: PIT IN 1 LAP
+    // Candidate: PIT WINDOW OPEN
     if (lapsRemaining >= 2 && isCompoundViableForRemainingLaps(primaryTargetCompound, lapsRemaining - 1)) {
       const timePitIn1 = simulate_stint_time(currentLap + 1, compound, tyreAge, currentLap, primaryTargetCompound, setup, allCars, fuelKg, thermalState);
       if (Math.abs(timePitIn1 - timeStayOut) <= MAX_STRATEGY_TIME_DELTA) {
         candidates.push({
           id: 'PIT_IN_1_LAP',
-          action: 'PIT IN 1 LAP',
+          action: 'PIT WINDOW OPEN',
           stopLap: currentLap + 1,
           targetCompound: primaryTargetCompound,
           totalTime: timePitIn1,
@@ -914,13 +914,13 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
       }
     }
 
-    // Candidate: PIT IN 2 LAPS
+    // Candidate: PIT WINDOW OPEN
     if (lapsRemaining >= 3 && isCompoundViableForRemainingLaps(primaryTargetCompound, lapsRemaining - 2)) {
       const timePitIn2 = simulate_stint_time(currentLap + 2, compound, tyreAge, currentLap, primaryTargetCompound, setup, allCars, fuelKg, thermalState);
       if (Math.abs(timePitIn2 - timeStayOut) <= MAX_STRATEGY_TIME_DELTA) {
         candidates.push({
           id: 'PIT_IN_2_LAPS',
-          action: 'PIT IN 2 LAPS',
+          action: 'PIT WINDOW OPEN',
           stopLap: currentLap + 2,
           targetCompound: primaryTargetCompound,
           totalTime: timePitIn2,
@@ -960,13 +960,13 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
         alternative = candidates.find(c => c.action !== 'PIT NOW') || candidates[1] || candidates[0];
       }
     } else if (optResult.optimalLap - currentLap === 1) {
-      const pit1Cand = candidates.find(c => c.action === 'PIT IN 1 LAP');
+      const pit1Cand = candidates.find(c => c.action === 'PIT WINDOW OPEN');
       if (pit1Cand) {
         primary = pit1Cand;
         alternative = candidates.find(c => c !== pit1Cand) || candidates[0];
       }
     } else if (optResult.optimalLap - currentLap === 2) {
-      const pit2Cand = candidates.find(c => c.action === 'PIT IN 2 LAPS');
+      const pit2Cand = candidates.find(c => c.action === 'PIT WINDOW OPEN');
       if (pit2Cand) {
         primary = pit2Cand;
         alternative = candidates.find(c => c !== pit2Cand) || candidates[0];
@@ -980,7 +980,7 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     }
 
     // ── Anti-Oscillation Hysteresis ──
-    const isCountdownPit = primary.action === 'PIT IN 1 LAP' || primary.action === 'PIT IN 2 LAPS';
+    const isCountdownPit = primary.action === 'PIT WINDOW OPEN' || primary.action === 'PIT WINDOW OPEN';
     if (lastPrescriptionState.action && lastPrescriptionState.action !== primary.action) {
       const timeSaved = alternative ? (alternative.totalTime - primary.totalTime) : 0;
       const isUrgentCondition = isUrgentPit || isCountdownPit || (trafficNow.risk === 'HIGH' && primary.action === 'PIT NOW');
@@ -1023,9 +1023,9 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
   let displayedOptimalLap = optResult.optimalLap;
   if (primary.action === 'PIT NOW') {
     displayedOptimalLap = currentLap;
-  } else if (primary.action === 'PIT IN 1 LAP') {
+  } else if (primary.action === 'PIT WINDOW OPEN') {
     displayedOptimalLap = currentLap + 1;
-  } else if (primary.action === 'PIT IN 2 LAPS') {
+  } else if (primary.action === 'PIT WINDOW OPEN') {
     displayedOptimalLap = currentLap + 2;
   } else {
     displayedOptimalLap = Math.max(currentLap + 1, optResult.optimalLap);
@@ -1037,9 +1037,9 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     nextDecisionLap = `RE-EVALUATE LAP ${MIN_STINT_LAPS + 1}`;
   } else if (primary.action === 'PIT NOW') {
     nextDecisionLap = 'RE-EVALUATE AFTER PIT EXIT';
-  } else if (primary.action === 'PIT IN 1 LAP') {
+  } else if (primary.action === 'PIT WINDOW OPEN') {
     nextDecisionLap = `RE-EVALUATE LAP ${currentLap + 1}`;
-  } else if (primary.action === 'PIT IN 2 LAPS') {
+  } else if (primary.action === 'PIT WINDOW OPEN') {
     nextDecisionLap = `RE-EVALUATE LAP ${currentLap + 1}`;
   } else {
     // STAY OUT: Re-evaluate before optimal stop or at intermediate checkpoint
@@ -1087,13 +1087,13 @@ export function getPrescription(compound, tyreAge, currentLap, fuelPct, setup = 
     } else {
       reason = `Pace loss on ${compound} exceeds pit penalty threshold. Lap ${currentLap} is the optimal pit lap. Box now for fresh ${primary.targetCompound}; strategy will be re-evaluated after pit exit.`;
     }
-  } else if (primary.action === 'PIT IN 1 LAP') {
+  } else if (primary.action === 'PIT WINDOW OPEN') {
     if (trafficNow.risk === 'HIGH') {
       reason = `Immediate pit stop exits behind traffic. Extending by 1 lap allows clear rejoin window. Lap ${currentLap + 1} is the optimal pit lap; strategy will be re-evaluated on Lap ${currentLap + 1}.`;
     } else {
       reason = `One additional lap optimizes tyre temperature and stint balance before switching to ${primary.targetCompound}. Lap ${currentLap + 1} is the optimal pit lap; strategy will be re-evaluated on Lap ${currentLap + 1}.`;
     }
-  } else if (primary.action === 'PIT IN 2 LAPS') {
+  } else if (primary.action === 'PIT WINDOW OPEN') {
     reason = `Push for 2 laps to build pit gap buffer against rivals while tyre degradation remains manageable. Lap ${currentLap + 2} is the optimal pit lap; strategy will be re-evaluated on Lap ${currentLap + 1}.`;
   }
 

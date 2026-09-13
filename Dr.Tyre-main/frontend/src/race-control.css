@@ -148,8 +148,24 @@
 
 .rc-status-banner.sc { background: var(--amber-dim); border-color: var(--color-carbon); color: var(--color-carbon); }
 
+.rc-header-alert-badge:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.96);
+}
+
+.rc-header-alert-badge.pulse-alert {
+  animation: rc-alert-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes rc-alert-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+  100% { transform: scale(1); }
+}
+
 .rc-timeline {
-  flex-grow: 1;
+  flex: 1 1 240px;
+  max-width: 440px;
   background: var(--color-paper-white);
   border: 2px solid var(--color-carbon) !important;
   border-radius: var(--radius-md);

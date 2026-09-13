@@ -2307,3 +2307,45 @@ table tbody tr:last-child td, .attribution-table tbody tr:last-child td {
   border-bottom: none !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   RACE INTELLIGENCE FEED & PIT WALL RADIO (F1 PIT-WALL UI)
+   ═══════════════════════════════════════════════════════════════ */
+
+.intel-layout-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(420px, 1.25fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .intel-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.intel-alert-card {
+  position: relative;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  user-select: none;
+}
+
+.intel-alert-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.4) !important;
+}
+
+.intel-alert-card.selected {
+  border: 2.5px solid #000000 !important;
+  box-shadow: 0 4px 0 #000000 !important;
+  background: #ffffff !important;
+}
+
+.intel-view-tab {
+  transition: all 0.15s ease;
+}
+
+.intel-view-tab:hover {
+  transform: translateY(-1px);
+}
+

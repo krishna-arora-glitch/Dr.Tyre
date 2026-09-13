@@ -3,7 +3,7 @@
  * Fully overhauled for the Race Control dashboard.
  */
 
-import { initTrack, syncCarsToSVG, renderCars, getPitLaneConfig, getPitBoxTarget } from './track.js';
+import { initTrack, syncCarsToSVG, renderCars, getPitLaneConfig, getPitBoxTarget, renderTrackDegradation, highlightActiveTurn } from './track.js';
 import { generateGrid, evaluateAIPit, getAIFreshCompound } from './competitors.js';
 import { applyScenario } from './scenarios.js';
 import { 
@@ -30,6 +30,8 @@ import { evaluateBattleManagement } from './battleManagement.js';
 import { computeTyreFingerprint, archiveStintFingerprint } from './tyreFingerprint.js';
 import { evaluateInformationValue } from './informationValue.js';
 import { createConfidenceSmoother } from './predictionConfidence.js';
+import { evaluateRaceIntelligence, resetIntelligenceFeed } from './raceIntelligenceFeed.js';
+import { updateRaceIntelligenceUI } from './raceIntelligencePage.js';
 
 let modelData = null;
 let telemetryData = null;
@@ -176,6 +178,7 @@ export function initSimulation(data, telData) {
   // Engineer / Prescription Engine
   DOM.engCall = document.getElementById('eng-call');
   DOM.rxConfBadge = document.getElementById('rx-conf-badge');
+  DOM.rxConfMetric = document.getElementById('rx-conf-metric');
   DOM.rxRecommended = document.getElementById('rx-recommended-action');
   DOM.rxReason = document.getElementById('rx-reason');
   DOM.rxGain = document.getElementById('rx-gain');
@@ -423,6 +426,7 @@ function bindEvents() {
 function startRace(scenarioId) {
   stopSimulation();
   resetOptimalTracking();
+  resetIntelligenceFeed();
   
   state.lap = 1;
   state.eventsLog = [];
@@ -472,19 +476,22 @@ function startRace(scenarioId) {
     state.userCar.compound = raceSetup.tyres.startingCompound;
     state.userCar.fuelPct = Math.min(100, raceSetup.fuel.startingFuelKg / 1.1); // Assuming 1.1kg = 1%
     
-    // Apply aerodynamic/mechanical modifiers
+    // Apply aerodynamic/mechanical modifiers (reduced magnitudes for competitive balance)
     let setupOffset = 0;
-    if (raceSetup.aerodynamics.downforceLevel === 'HIGH') setupOffset -= 1.2; // much faster in corners
-    if (raceSetup.aerodynamics.downforceLevel === 'LOW') setupOffset += 0.8; // slower on generic/high-downforce tracks
-    if (raceSetup.mechanical.balance === 'FRONT' || raceSetup.mechanical.balance === 'REAR') setupOffset += 0.2; // extreme balance costs time
+    if (raceSetup.aerodynamics.downforceLevel === 'HIGH') setupOffset -= 0.5;
+    if (raceSetup.aerodynamics.downforceLevel === 'LOW') setupOffset += 0.3;
+    if (raceSetup.mechanical.balance === 'FRONT' || raceSetup.mechanical.balance === 'REAR') setupOffset += 0.1;
     
-    // Apply Energy Strategy (Aggressive = faster lap times, Conservative = slower)
+    // Apply Energy Strategy
     let energyOffset = 0;
-    if (raceSetup.energy.deploymentStrategy === 'AGGRESSIVE') energyOffset -= 0.8;
-    if (raceSetup.energy.deploymentStrategy === 'CONSERVATIVE') energyOffset += 0.8;
+    if (raceSetup.energy.deploymentStrategy === 'AGGRESSIVE') energyOffset -= 0.3;
+    if (raceSetup.energy.deploymentStrategy === 'CONSERVATIVE') energyOffset += 0.3;
     
     state.userCar.setupOffsetTotal = setupOffset + energyOffset; // Store for HUD
     state.userCar.baseLapTime += state.userCar.setupOffsetTotal;
+
+    // User operates on the exact same baseline pace as AI (no hero driver advantage)
+    // state.userCar.baseLapTime -= 0.15;
     
     state.userCar.setup = {
       downforceLevel: raceSetup.aerodynamics.downforceLevel,
@@ -497,6 +504,10 @@ function startRace(scenarioId) {
   
   syncCarsToSVG(state.cars, DOM.trackSvg);
   initTelemetryUI();
+
+  // Render initial color-coded turn degradation heatmap & turn markers on the track
+  const initTrackMap = computeTrackDegradationMap(raceConfig.trackId || 'singapore', state.userCar, modelData);
+  renderTrackDegradation(initTrackMap);
   
   // Build the shared track dynamics profile from telemetry (ONE TIME)
   buildTrackProfile(telemetryData);
@@ -670,8 +681,8 @@ function simulationLoop(now) {
         
         logEvent(`CAR ${car.number} ENTERED PIT LANE - BOX BOX BOX`, 'pit');
         
-        // Apply pit penalty to totalRaceTime
-        car.totalRaceTime += 28.0;
+        // Apply pit penalty to totalRaceTime (aligned with strategy.js PIT_LANE_LOSS = 22.0s)
+        car.totalRaceTime += 22.0;
         
         return; // Skip normal progress update this frame
       }
@@ -872,6 +883,8 @@ function simulationLoop(now) {
     // Calculate pacing including thermal degradation variable, dirty air stress & driver behaviour stress modifier
     let degDelta = getDegradationDelta(car.compound, car.tyreAge, car.setup, car.thermalState, car.aeroInterference || 0, car.driverBehaviour?.tyreStressModifier || 1.0);
     
+    // (User advantage removed; all cars degrade at the same mathematical rate)
+
     // Fuel effect: cars get faster as they burn fuel
     // 1% fuel = ~1.1kg. activePrior is s/kg.
     const fuelPriorValue = parseFloat(activePrior) || 0.05;
@@ -1366,9 +1379,15 @@ function updateUI() {
   rx.smoothedConfidenceLevel = smoothedConfLevel;
 
   if (DOM.rxConfBadge) {
-    DOM.rxConfBadge.textContent = `${smoothedConfScore}% ${smoothedConfLevel}`;
+    DOM.rxConfBadge.textContent = `CONF: ${smoothedConfScore}% ${smoothedConfLevel}`;
     DOM.rxConfBadge.className = smoothedConfLevel === 'HIGH' ? 'conf-high' : (smoothedConfLevel === 'MEDIUM' ? 'conf-medium' : 'conf-low');
     DOM.rxConfBadge.title = (rx.confidenceReasons || []).join('; ');
+  }
+
+  if (DOM.rxConfMetric) {
+    DOM.rxConfMetric.textContent = `${smoothedConfScore}% ${smoothedConfLevel}`;
+    DOM.rxConfMetric.style.color = smoothedConfLevel === 'HIGH' ? '#16a34a' : (smoothedConfLevel === 'MEDIUM' ? '#d97706' : '#dc2626');
+    DOM.rxConfMetric.title = (rx.confidenceReasons || []).join('; ');
   }
 
   if (DOM.engCall) {
@@ -1511,6 +1530,7 @@ function updateUI() {
 
   // 3. Track Degradation Map
   if (currentSeg) {
+    highlightActiveTurn(currentSeg.id);
     if (DOM.rcTrackCurSeg) DOM.rcTrackCurSeg.textContent = currentSeg.name.toUpperCase();
     if (DOM.rcTrackCurTag) {
       DOM.rcTrackCurTag.textContent = currentSeg.primaryTag;
@@ -1525,9 +1545,12 @@ function updateUI() {
     if (DOM.rcTrackCbThermal) DOM.rcTrackCbThermal.textContent = `${currentSeg.contributors.thermal}%`;
     if (DOM.rcTrackCbBraking) DOM.rcTrackCbBraking.textContent = `${currentSeg.contributors.braking}%`;
     if (DOM.rcTrackCbTraction) DOM.rcTrackCbTraction.textContent = `${currentSeg.contributors.traction}%`;
+  } else {
+    highlightActiveTurn(null);
   }
   if (DOM.rcTrackStrip && trackMap && (!DOM.rcTrackStrip.children.length || state.lap !== DOM.rcTrackStrip._lastLap)) {
     DOM.rcTrackStrip._lastLap = state.lap;
+    renderTrackDegradation(trackMap);
     DOM.rcTrackStrip.innerHTML = '';
     trackMap.forEach(seg => {
       const segSpan = document.createElement('div');
@@ -1657,6 +1680,11 @@ function updateUI() {
   if (DOM.engOptFuel) DOM.engOptFuel.textContent = `+${(rx.fuelNeeded || 0).toFixed(1)}kg`;
   if (DOM.engConf) DOM.engConf.textContent = `${smoothedConfScore}% ${smoothedConfLevel}`;
   
+  // ── Strategic Feature 5: Race Intelligence Feed Synthesis ──
+  const intelResult = evaluateRaceIntelligence(u, state.cars, state.lap, state.totalLaps, modelData, state.raceEvent);
+  state.raceIntelligence = intelResult;
+  updateRaceIntelligenceUI(intelResult, state.lap, state.totalLaps);
+
   // Broadcast state to any listeners (e.g. Research Pages)
   stateListeners.forEach(cb => cb(state));
 }
